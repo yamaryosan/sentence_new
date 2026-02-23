@@ -7,6 +7,9 @@
 		"build": "next build",
 		"start": "next start",
 		"lint": "eslint",
+		"db:up": "docker compose up -d postgres",
+		"db:down": "docker compose down",
+		"db:logs": "docker compose logs -f postgres",
 		"spellcheck": "cspell --no-progress \"**/*.{js,jsx,ts,tsx,mjs,cjs,json,md}\"",
 		"prepare": "husky"
 	},
