@@ -1,0 +1,26 @@
+{
+	"version": "0.2",
+	"language": "en",
+	"words": [
+		"cspell",
+		"eslint",
+		"favicon",
+		"globals",
+		"husky",
+		"logomark",
+		"mjs",
+		"nextjs",
+		"postcss",
+		"prettier",
+		"tailwindcss",
+		"tsconfig",
+		"tsx"
+	],
+	"ignorePaths": [
+		".git",
+		".husky/_",
+		".next",
+		"node_modules",
+		"package-lock.json"
+	]
+}
