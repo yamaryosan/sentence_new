@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
 
 export async function POST(request: Request) {
 	const formData = await request.formData();
@@ -22,7 +23,22 @@ export async function POST(request: Request) {
 	}
 
 	const text = await file.text();
-	const preview = text.slice(0, 100);
+	const contents = text
+		.replace(/\r\n/g, "\n")
+		.split("\n\n")
+		.map((chunk) => chunk.trim())
+		.filter((chunk) => chunk.length > 0);
 
-	return NextResponse.json({ preview });
+	if (contents.length === 0) {
+		return NextResponse.json(
+			{ error: "保存対象のテキストが見つかりませんでした。" },
+			{ status: 400 },
+		);
+	}
+
+	const result = await prisma.sentence.createMany({
+		data: contents.map((content) => ({ content })),
+	});
+
+	return NextResponse.json({ count: result.count });
 }

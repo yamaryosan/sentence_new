@@ -29,7 +29,7 @@ export default function Home() {
 			});
 
 			const data = (await response.json()) as
-				| { preview: string }
+				| { count: number }
 				| { error: string };
 
 			if (!response.ok || "error" in data) {
@@ -37,7 +37,7 @@ export default function Home() {
 				return;
 			}
 
-			setResult(data.preview);
+			setResult(`${data.count}件のレコードを保存しました。`);
 		} catch {
 			setError("通信エラーが発生しました。");
 		} finally {
@@ -56,7 +56,7 @@ export default function Home() {
 				</form>
 
 				{error && <p>{error}</p>}
-				{result && <p>先頭100文字: {result}</p>}
+				{result && <p>{result}</p>}
 			</main>
 		</div>
 	);
