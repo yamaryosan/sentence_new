@@ -14,7 +14,8 @@
 		"prettier",
 		"tailwindcss",
 		"tsconfig",
-		"tsx"
+		"tsx",
+		"turbopack"
 	],
 	"ignorePaths": [
 		".git",
