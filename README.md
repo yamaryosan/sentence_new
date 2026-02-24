@@ -43,4 +43,4 @@ npm run db:down
 npm run dev
 ```
 
-ブラウザで`http://localhost:3000`を開く
+ブラウザで`http://localhost:3000`を開く。
