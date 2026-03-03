@@ -8,6 +8,8 @@ export default function Home() {
 				<p>
 					<Link href="/upload">/upload</Link>
 				</p>
+				<p>閲覧画面は以下から。</p>
+				<Link href="/view">/view</Link>
 			</main>
 		</div>
 	);
