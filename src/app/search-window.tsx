@@ -12,6 +12,7 @@ export default function SearchWindow() {
 	const [results, setResults] = useState<Sentence[]>([]);
 	const [isLoading, setIsLoading] = useState(false);
 	const [error, setError] = useState("");
+	const [hasSearched, setHasSearched] = useState(false);
 
 	const handleSubmit: SubmitEventHandler<HTMLFormElement> = async (event) => {
 		event.preventDefault();
@@ -20,6 +21,7 @@ export default function SearchWindow() {
 		if (trimmed.length === 0) {
 			setError("検索キーワードを入力してください。");
 			setResults([]);
+			setHasSearched(false);
 			return;
 		}
 
@@ -35,13 +37,16 @@ export default function SearchWindow() {
 			if (!response.ok || "error" in data) {
 				setError("error" in data ? data.error : "検索に失敗しました。");
 				setResults([]);
+				setHasSearched(false);
 				return;
 			}
 
 			setResults(data.sentences);
+			setHasSearched(true);
 		} catch {
 			setError("通信エラーが発生しました。");
 			setResults([]);
+			setHasSearched(false);
 		} finally {
 			setIsLoading(false);
 		}
@@ -72,7 +77,7 @@ export default function SearchWindow() {
 				</ul>
 			)}
 
-			{!error && !isLoading && query.trim() && results.length === 0 && (
+			{!error && !isLoading && hasSearched && results.length === 0 && (
 				<p>一致する文章はありません。</p>
 			)}
 		</section>
