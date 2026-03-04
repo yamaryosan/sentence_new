@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import SearchWindow from "./search-window";
 
 const geistSans = Geist({
 	variable: "--font-geist-sans",
@@ -30,7 +31,7 @@ export default function RootLayout({
 				<div className="app-shell">
 					<main className="app-main">{children}</main>
 					<aside className="search-pane">
-						<h2>検索ウィンドウ</h2>
+						<SearchWindow />
 					</aside>
 				</div>
 			</body>
