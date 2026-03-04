@@ -27,7 +27,12 @@ export default function RootLayout({
 			<body
 				className={`${geistSans.variable} ${geistMono.variable} antialiased`}
 			>
-				{children}
+				<div className="app-shell">
+					<main className="app-main">{children}</main>
+					<aside className="search-pane">
+						<h2>検索ウィンドウ</h2>
+					</aside>
+				</div>
 			</body>
 		</html>
 	);
