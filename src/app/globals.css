@@ -56,6 +56,7 @@ body {
 	border: 1px solid #ccc;
 	padding: 12px;
 	border-radius: 4px;
+	white-space: pre-wrap;
 }
 
 .sentence-card-trigger {
