@@ -1,6 +1,7 @@
 "use client";
 
 import { type SubmitEventHandler, useState } from "react";
+import SentenceCard from "./sentence-card";
 
 type Sentence = {
 	id: number;
@@ -70,9 +71,9 @@ export default function SearchWindow() {
 			{error && <p>{error}</p>}
 
 			{!error && !isLoading && results.length > 0 && (
-				<ul>
+				<ul className="search-results">
 					{results.map((sentence) => (
-						<li key={sentence.id}>{sentence.content}</li>
+						<SentenceCard key={sentence.id} content={sentence.content} />
 					))}
 				</ul>
 			)}
