@@ -20,7 +20,33 @@
 }
 
 body {
+	margin: 0;
 	background: var(--background);
 	color: var(--foreground);
 	font-family: Arial, Helvetica, sans-serif;
+}
+
+.app-shell {
+	display: flex;
+	min-height: 100vh;
+}
+
+.app-main {
+	flex: 1;
+	padding: 24px;
+}
+
+.app-content {
+	margin-top: 32px;
+}
+
+.nav-pane {
+	width: 360px;
+	border-left: 1px solid #ddd;
+	padding: 24px;
+}
+
+.nav-list {
+	margin: 0;
+	padding-left: 20px;
 }
