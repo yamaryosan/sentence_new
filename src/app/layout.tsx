@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
 import "./globals.css";
+import ThemeToggle from "./theme-toggle";
 
 const geistSans = Geist({
 	variable: "--font-geist-sans",
@@ -33,6 +34,7 @@ export default function RootLayout({
 						<section className="app-content">{children}</section>
 					</main>
 					<aside className="nav-pane">
+						<ThemeToggle />
 						<h2>メニュー</h2>
 						<nav aria-label="ページリンク">
 							<ul className="nav-list">
