@@ -1,13 +1,13 @@
 import { Prisma } from "@prisma/client";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 const MAX_QUERY_LENGTH = 200;
 
-export async function GET(request: Request) {
-	const { searchParams } = new URL(request.url);
-	const rawQuery = searchParams.get("q") ?? "";
+export async function GET(request: NextRequest) {
+	const rawQuery = request.nextUrl.searchParams.get("q") ?? "";
 	const query = rawQuery.trim();
+	const sort = request.nextUrl.searchParams.get("sort");
 
 	if (query.length === 0) {
 		return NextResponse.json(
@@ -31,7 +31,10 @@ export async function GET(request: Request) {
 					mode: "insensitive",
 				},
 			},
-			orderBy: { id: "asc" },
+			orderBy:
+				sort === "content-asc"
+					? [{ content: "asc" }, { id: "asc" }]
+					: [{ id: "asc" }],
 		});
 
 		return NextResponse.json({ sentences });
