@@ -12,13 +12,6 @@
 	--font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-	:root {
-		--background: #0a0a0a;
-		--foreground: #ededed;
-	}
-}
-
 body {
 	margin: 0;
 	background: var(--background);
@@ -49,4 +42,31 @@ body {
 .nav-list {
 	margin: 0;
 	padding-left: 20px;
+}
+
+.search-results {
+	list-style: none;
+	margin: 16px 0 0;
+	padding: 0;
+	display: grid;
+	gap: 12px;
+}
+
+.sentence-card {
+	border: 1px solid #ccc;
+	padding: 12px;
+	border-radius: 4px;
+	white-space: pre-wrap;
+}
+
+.sentence-card-trigger {
+	display: block;
+	width: 100%;
+	border: 0;
+	padding: 0;
+	background: transparent;
+	color: inherit;
+	font: inherit;
+	text-align: left;
+	cursor: pointer;
 }

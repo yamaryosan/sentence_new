@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import SentenceCard from "../sentence-card";
 
 type Sentence = {
 	id: number;
@@ -52,11 +53,9 @@ export default function ViewList() {
 	}
 
 	return (
-		<ul>
+		<ul className="search-results">
 			{sentences.map((sentence) => (
-				<li key={sentence.id}>
-					<p>{sentence.content}</p>
-				</li>
+				<SentenceCard key={sentence.id} content={sentence.content} />
 			))}
 		</ul>
 	);
