@@ -2,17 +2,35 @@ import { Prisma } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+const PAGE_SIZE = 200;
+
 export async function GET(request: NextRequest) {
 	try {
 		const sort = request.nextUrl.searchParams.get("sort");
+		const pageParam = request.nextUrl.searchParams.get("page");
+		const parsedPage = Number(pageParam);
+		const requestedPage =
+			Number.isInteger(parsedPage) && parsedPage > 0 ? parsedPage : 1;
+		const orderBy: Prisma.SentenceOrderByWithRelationInput[] =
+			sort === "content-asc"
+				? [{ content: "asc" }, { id: "asc" }]
+				: [{ id: "asc" }];
+		const totalCount = await prisma.sentence.count();
+		const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+		const currentPage = Math.min(requestedPage, totalPages);
 		const sentences = await prisma.sentence.findMany({
-			orderBy:
-				sort === "content-asc"
-					? [{ content: "asc" }, { id: "asc" }]
-					: [{ id: "asc" }],
+			orderBy,
+			skip: (currentPage - 1) * PAGE_SIZE,
+			take: PAGE_SIZE,
 		});
 
-		return NextResponse.json({ sentences });
+		return NextResponse.json({
+			sentences,
+			page: currentPage,
+			pageSize: PAGE_SIZE,
+			totalCount,
+			totalPages,
+		});
 	} catch (error) {
 		if (
 			error instanceof Prisma.PrismaClientKnownRequestError &&
