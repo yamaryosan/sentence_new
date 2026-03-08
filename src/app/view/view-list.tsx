@@ -8,10 +8,13 @@ type Sentence = {
 	content: string;
 };
 
+type SortOption = "id-asc" | "content-asc";
+
 export default function ViewList() {
 	const [sentences, setSentences] = useState<Sentence[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
 	const [error, setError] = useState("");
+	const [sort, setSort] = useState<SortOption>("id-asc");
 
 	useEffect(() => {
 		const fetchSentences = async () => {
@@ -19,7 +22,8 @@ export default function ViewList() {
 			setError("");
 
 			try {
-				const response = await fetch("/api/view");
+				const params = new URLSearchParams({ sort });
+				const response = await fetch(`/api/view?${params.toString()}`);
 				const data = (await response.json()) as
 					| { sentences: Sentence[] }
 					| { error: string };
@@ -38,25 +42,35 @@ export default function ViewList() {
 		};
 
 		void fetchSentences();
-	}, []);
-
-	if (isLoading) {
-		return <p>Loading...</p>;
-	}
-
-	if (error) {
-		return <p>{error}</p>;
-	}
-
-	if (sentences.length === 0) {
-		return <p>保存されている文章はありません。</p>;
-	}
+	}, [sort]);
 
 	return (
-		<ul className="search-results">
-			{sentences.map((sentence) => (
-				<SentenceCard key={sentence.id} content={sentence.content} />
-			))}
-		</ul>
+		<section>
+			<label htmlFor="view-sort">ソート</label>
+			<select
+				id="view-sort"
+				value={sort}
+				onChange={(event) => setSort(event.target.value as SortOption)}
+			>
+				<option value="id-asc">登録順</option>
+				<option value="content-asc">文字列昇順</option>
+			</select>
+
+			{isLoading && <p>Loading...</p>}
+
+			{!isLoading && error && <p>{error}</p>}
+
+			{!isLoading && !error && sentences.length === 0 && (
+				<p>保存されている文章はありません。</p>
+			)}
+
+			{!isLoading && !error && sentences.length > 0 && (
+				<ul className="search-results">
+					{sentences.map((sentence) => (
+						<SentenceCard key={sentence.id} content={sentence.content} />
+					))}
+				</ul>
+			)}
+		</section>
 	);
 }
