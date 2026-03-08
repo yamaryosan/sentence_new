@@ -1,21 +1,37 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 
 type Theme = "light" | "dark";
 
 const STORAGE_KEY = "theme";
+const THEME_EVENT = "theme-change";
 
-const getInitialTheme = (): Theme => {
-	if (typeof window === "undefined") {
-		return "light";
-	}
+const getStoredTheme = (): Theme =>
+	window.localStorage.getItem(STORAGE_KEY) === "dark" ? "dark" : "light";
 
-	return window.localStorage.getItem(STORAGE_KEY) === "dark" ? "dark" : "light";
+const subscribe = (onStoreChange: () => void) => {
+	const handleStorage = (event: StorageEvent) => {
+		if (event.key === STORAGE_KEY) {
+			onStoreChange();
+		}
+	};
+
+	const handleThemeChange = () => {
+		onStoreChange();
+	};
+
+	window.addEventListener("storage", handleStorage);
+	window.addEventListener(THEME_EVENT, handleThemeChange);
+
+	return () => {
+		window.removeEventListener("storage", handleStorage);
+		window.removeEventListener(THEME_EVENT, handleThemeChange);
+	};
 };
 
 export default function ThemeToggle() {
-	const [theme, setTheme] = useState<Theme>(getInitialTheme);
+	const theme = useSyncExternalStore(subscribe, getStoredTheme, () => "light");
 	const isDark = theme === "dark";
 
 	useEffect(() => {
@@ -30,11 +46,11 @@ export default function ThemeToggle() {
 			className="theme-toggle"
 			aria-label={isDark ? "ライトモードに切り替え" : "ナイトモードに切り替え"}
 			title={isDark ? "ライトモード" : "ナイトモード"}
-			onClick={() =>
-				setTheme((currentTheme) =>
-					currentTheme === "light" ? "dark" : "light",
-				)
-			}
+			onClick={() => {
+				const nextTheme = theme === "light" ? "dark" : "light";
+				window.localStorage.setItem(STORAGE_KEY, nextTheme);
+				window.dispatchEvent(new Event(THEME_EVENT));
+			}}
 		>
 			<span className="theme-toggle-icon" aria-hidden="true">
 				{isDark ? (
