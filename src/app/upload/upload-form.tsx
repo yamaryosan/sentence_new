@@ -4,7 +4,8 @@ import { type FormEvent, useState } from "react";
 
 export default function UploadForm() {
 	const [result, setResult] = useState("");
-	const [isLoading, setIsLoading] = useState(false);
+	const [isUploading, setIsUploading] = useState(false);
+	const [isDeleting, setIsDeleting] = useState(false);
 	const [error, setError] = useState("");
 
 	const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -20,7 +21,7 @@ export default function UploadForm() {
 			return;
 		}
 
-		setIsLoading(true);
+		setIsUploading(true);
 
 		try {
 			const response = await fetch("/api/upload", {
@@ -41,17 +42,57 @@ export default function UploadForm() {
 		} catch {
 			setError("通信エラーが発生しました。");
 		} finally {
-			setIsLoading(false);
+			setIsUploading(false);
 		}
 	};
 
+	const handleDeleteAll = async () => {
+		setError("");
+		setResult("");
+
+		const shouldDelete = window.confirm("本当に削除しますか？");
+		if (!shouldDelete) {
+			return;
+		}
+
+		setIsDeleting(true);
+
+		try {
+			const response = await fetch("/api/upload", {
+				method: "DELETE",
+			});
+
+			const data = (await response.json()) as
+				| { count: number }
+				| { error: string };
+
+			if (!response.ok || "error" in data) {
+				setError("error" in data ? data.error : "削除に失敗しました。");
+				return;
+			}
+
+			setResult(`${data.count}件のレコードを削除しました。`);
+		} catch {
+			setError("通信エラーが発生しました。");
+		} finally {
+			setIsDeleting(false);
+		}
+	};
+
+	const isBusy = isUploading || isDeleting;
+
 	return (
 		<>
-			<form onSubmit={handleSubmit}>
+			<form onSubmit={handleSubmit} className="upload-form">
 				<input type="file" name="file" accept=".txt,text/plain" />
-				<button type="submit" disabled={isLoading}>
-					{isLoading ? "Uploading..." : "Upload"}
-				</button>
+				<div className="upload-actions">
+					<button type="submit" disabled={isBusy}>
+						{isUploading ? "Uploading..." : "Upload"}
+					</button>
+					<button type="button" onClick={handleDeleteAll} disabled={isBusy}>
+						{isDeleting ? "Deleting..." : "全て削除"}
+					</button>
+				</div>
 			</form>
 
 			{error && <p>{error}</p>}
