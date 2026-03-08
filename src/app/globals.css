@@ -169,12 +169,37 @@ a {
 	gap: 12px;
 }
 
+.sentence-card-item {
+	display: grid;
+	gap: 12px;
+}
+
 .sentence-card {
 	border: 1px solid var(--border);
 	background: var(--surface);
 	padding: 12px;
 	border-radius: 4px;
 	white-space: pre-wrap;
+}
+
+.sentence-card-actions {
+	display: flex;
+	justify-content: flex-end;
+}
+
+.sentence-card-copy {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 40px;
+	height: 40px;
+	padding: 0;
+	cursor: pointer;
+}
+
+.sentence-card-copy span {
+	font-size: 18px;
+	line-height: 1;
 }
 
 .sentence-card-trigger {
