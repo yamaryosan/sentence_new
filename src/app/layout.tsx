@@ -46,6 +46,9 @@ export default function RootLayout({
 									<Link href="/view">/view</Link>
 								</li>
 								<li>
+									<Link href="/random">/random</Link>
+								</li>
+								<li>
 									<Link href="/upload">/upload</Link>
 								</li>
 							</ul>

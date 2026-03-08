@@ -13,6 +13,8 @@ export default function Home() {
 			</p>
 			<p>閲覧画面は以下から。</p>
 			<Link href="/view">/view</Link>
+			<p>ランダム表示は以下から。</p>
+			<Link href="/random">/random</Link>
 		</>
 	);
 }
