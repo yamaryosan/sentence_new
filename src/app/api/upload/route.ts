@@ -128,3 +128,27 @@ export async function POST(request: Request) {
 		);
 	}
 }
+
+export async function DELETE() {
+	try {
+		const result = await prisma.sentence.deleteMany();
+		return NextResponse.json({ count: result.count });
+	} catch (error) {
+		if (
+			error instanceof Prisma.PrismaClientKnownRequestError &&
+			error.code === "P2021"
+		) {
+			return NextResponse.json(
+				{
+					error: "Sentenceテーブルが存在しません。`npm run prisma:migrate` を実行してください。",
+				},
+				{ status: 500 },
+			);
+		}
+
+		return NextResponse.json(
+			{ error: "データ削除中にエラーが発生しました。" },
+			{ status: 500 },
+		);
+	}
+}
