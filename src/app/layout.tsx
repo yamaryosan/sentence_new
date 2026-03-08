@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
 import "./globals.css";
 import ThemeToggle from "./theme-toggle";
+import ScrollToTopButton from "./scroll-to-top-button";
 
 const geistSans = Geist({
 	variable: "--font-geist-sans",
@@ -50,6 +51,7 @@ export default function RootLayout({
 							</ul>
 						</nav>
 					</aside>
+					<ScrollToTopButton />
 				</div>
 			</body>
 		</html>
