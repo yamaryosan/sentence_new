@@ -44,3 +44,7 @@ npm run dev
 ```
 
 ブラウザで`http://localhost:3000`を開く。
+
+## CIの環境変数
+
+GitHub Actions では `DATABASE_URL` を workflow に直書きせず、`Settings > Secrets and variables > Actions` に `DATABASE_URL` secret として登録する。

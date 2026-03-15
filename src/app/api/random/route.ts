@@ -30,8 +30,7 @@ export async function GET() {
 		) {
 			return NextResponse.json(
 				{
-					error:
-						"Sentenceテーブルが存在しません。`npm run prisma:migrate` を実行してください。",
+					error: "Sentenceテーブルが存在しません。`npm run prisma:migrate` を実行してください。",
 				},
 				{ status: 500 },
 			);
