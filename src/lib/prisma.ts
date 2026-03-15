@@ -1,4 +1,4 @@
-import { PrismaPg } from "@prisma/adapter-pg";
+import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 import { PrismaClient } from "@prisma/client";
 
 const globalForPrisma = globalThis as unknown as {
@@ -11,7 +11,15 @@ if (!connectionString) {
 	throw new Error("DATABASE_URL is not set.");
 }
 
-const adapter = new PrismaPg({ connectionString });
+const databaseUrl = new URL(connectionString);
+
+if (databaseUrl.protocol !== "mysql:") {
+	throw new Error(
+		`DATABASE_URL must use the mysql:// protocol. Received: ${databaseUrl.protocol}`,
+	);
+}
+
+const adapter = new PrismaMariaDb(connectionString);
 
 export const prisma =
 	globalForPrisma.prisma ??

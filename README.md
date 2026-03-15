@@ -1,8 +1,8 @@
 # sentence_database
 
-Local development setup for Next.js + PostgreSQL (Docker).
+Local development setup for Next.js + MySQL (Docker).
 
-## PostgreSQLを起動 (Docker)
+## MySQLを起動 (Docker)
 
 1. 環境変数ファイルを作成
 
@@ -10,7 +10,7 @@ Local development setup for Next.js + PostgreSQL (Docker).
 cp .env.example .env
 ```
 
-2. PostgreSQLコンテナを起動
+2. MySQLコンテナを起動
 
 ```bash
 npm run db:up
@@ -31,11 +31,11 @@ npm run db:down
 ### 接続設定
 
 - Host: `localhost`
-- Port: `5432`
+- Port: `3306`
 - Database: `sentence_db`
-- User: `postgres`
-- Password: `postgres`
-- URL: `postgresql://postgres:postgres@localhost:5432/sentence_db`
+- User: `sentence_user`
+- Password: `sentence_password`
+- URL: `mysql://sentence_user:sentence_password@localhost:3306/sentence_db`
 
 ## Next.jsのローカルサーバを起動
 
@@ -44,3 +44,7 @@ npm run dev
 ```
 
 ブラウザで`http://localhost:3000`を開く。
+
+## CIの環境変数
+
+GitHub Actions では `DATABASE_URL` を workflow に直書きせず、`Settings > Secrets and variables > Actions` に `DATABASE_URL` secret として登録する。

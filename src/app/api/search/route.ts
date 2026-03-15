@@ -2,7 +2,7 @@ import { Prisma } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-const MAX_QUERY_LENGTH = 200;
+const MAX_QUERY_LENGTH = 40;
 
 export async function GET(request: NextRequest) {
 	const rawQuery = request.nextUrl.searchParams.get("q") ?? "";
@@ -18,7 +18,9 @@ export async function GET(request: NextRequest) {
 
 	if (query.length > MAX_QUERY_LENGTH) {
 		return NextResponse.json(
-			{ error: `検索キーワードは${MAX_QUERY_LENGTH}文字以内で入力してください。` },
+			{
+				error: `検索キーワードは${MAX_QUERY_LENGTH}文字以内で入力してください。`,
+			},
 			{ status: 400 },
 		);
 	}
@@ -28,7 +30,6 @@ export async function GET(request: NextRequest) {
 			where: {
 				content: {
 					contains: query,
-					mode: "insensitive",
 				},
 			},
 			orderBy:
@@ -45,8 +46,7 @@ export async function GET(request: NextRequest) {
 		) {
 			return NextResponse.json(
 				{
-					error:
-						"Sentenceテーブルが存在しません。`npm run prisma:migrate` を実行してください。",
+					error: "Sentenceテーブルが存在しません。`npm run prisma:migrate` を実行してください。",
 				},
 				{ status: 500 },
 			);

@@ -1,21 +1,22 @@
 services:
-  postgres:
-    image: postgres:16-alpine
-    container_name: sentence_database_postgres
+  mysql:
+    image: mysql:8.4
+    container_name: sentence_database_mysql
     restart: unless-stopped
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "${MYSQL_PORT:-3306}:3306"
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-sentence_db}
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-sentence_db}
+      MYSQL_USER: ${MYSQL_USER:-sentence_user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-sentence_password}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - mysql_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-sentence_db}"]
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u${MYSQL_USER:-sentence_user} -p${MYSQL_PASSWORD:-sentence_password} --silent"]
       interval: 10s
       timeout: 5s
       retries: 5
 
 volumes:
-  postgres_data:
+  mysql_data:
