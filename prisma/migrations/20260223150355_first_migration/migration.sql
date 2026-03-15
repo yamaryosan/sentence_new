@@ -1,7 +1,7 @@
 -- CreateTable
-CREATE TABLE "Sentence" (
-    "id" SERIAL NOT NULL,
-    "content" TEXT NOT NULL,
+CREATE TABLE `Sentence` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `content` TEXT NOT NULL,
 
-    CONSTRAINT "Sentence_pkey" PRIMARY KEY ("id")
+    PRIMARY KEY (`id`)
 );
