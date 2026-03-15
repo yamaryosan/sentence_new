@@ -1,9 +1,16 @@
 import { NextResponse } from "next/server";
 
-const VERIFY_PASSWORD = "test";
 const VERIFY_COOKIE_NAME = "upload_verified";
+const VERIFY_PASSWORD = process.env.UPLOAD_VERIFY_PASSWORD;
 
 export async function POST(request: Request) {
+	if (!VERIFY_PASSWORD) {
+		return NextResponse.json(
+			{ error: "認証パスワードが設定されていません。" },
+			{ status: 500 },
+		);
+	}
+
 	let password = "";
 
 	try {
