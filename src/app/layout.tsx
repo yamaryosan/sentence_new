@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import Link from "next/link";
 import "./globals.css";
-import ThemeToggle from "./theme-toggle";
+import NavPane from "./nav-pane";
 import ScrollToTopButton from "./scroll-to-top-button";
 
 const geistSans = Geist({
@@ -30,30 +29,11 @@ export default function RootLayout({
 			<body
 				className={`${geistSans.variable} ${geistMono.variable} antialiased`}
 			>
-				<div className="app-shell">
-					<main className="app-main">
-						<section className="app-content">{children}</section>
+				<div className="flex min-h-screen flex-col md:flex-row">
+					<NavPane />
+					<main className="order-2 flex-1 p-4 md:order-1 md:p-6">
+						<section className="mt-4 md:mt-8">{children}</section>
 					</main>
-					<aside className="nav-pane">
-						<ThemeToggle />
-						<h2>メニュー</h2>
-						<nav aria-label="ページリンク">
-							<ul className="nav-list">
-								<li>
-									<Link href="/search">/search</Link>
-								</li>
-								<li>
-									<Link href="/view">/view</Link>
-								</li>
-								<li>
-									<Link href="/random">/random</Link>
-								</li>
-								<li>
-									<Link href="/upload">/upload</Link>
-								</li>
-							</ul>
-						</nav>
-					</aside>
 					<ScrollToTopButton />
 				</div>
 			</body>
