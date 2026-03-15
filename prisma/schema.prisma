@@ -8,5 +8,5 @@ datasource db {
 
 model Sentence {
   id      Int    @id @default(autoincrement())
-  content String
+  content String @db.LongText
 }
