@@ -1,9 +1,14 @@
 import { Prisma } from "@prisma/client";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 const MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024;
 const INSERT_BATCH_SIZE = 500;
+const VERIFY_COOKIE_NAME = "upload_verified";
+
+function isVerified(request: NextRequest) {
+	return request.cookies.get(VERIFY_COOKIE_NAME)?.value === "true";
+}
 
 async function* parseParagraphs(file: File): AsyncGenerator<string> {
 	const reader = file.stream().getReader();
@@ -46,7 +51,14 @@ async function* parseParagraphs(file: File): AsyncGenerator<string> {
 	}
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+	if (!isVerified(request)) {
+		return NextResponse.json(
+			{ error: "認証が必要です。" },
+			{ status: 401 },
+		);
+	}
+
 	const formData = await request.formData();
 	const file = formData.get("file");
 
@@ -129,7 +141,14 @@ export async function POST(request: Request) {
 	}
 }
 
-export async function DELETE() {
+export async function DELETE(request: NextRequest) {
+	if (!isVerified(request)) {
+		return NextResponse.json(
+			{ error: "認証が必要です。" },
+			{ status: 401 },
+		);
+	}
+
 	try {
 		const result = await prisma.sentence.deleteMany();
 		return NextResponse.json({ count: result.count });
