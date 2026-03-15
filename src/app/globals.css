@@ -155,6 +155,26 @@ a {
 }
 
 @media (max-width: 800px) {
+	.app-shell {
+		flex-direction: column;
+	}
+
+	.app-main {
+		padding: 16px;
+	}
+
+	.app-content {
+		margin-top: 16px;
+	}
+
+	.nav-pane {
+		order: -1;
+		width: auto;
+		border-left: 0;
+		border-bottom: 1px solid var(--border);
+		padding: 16px;
+	}
+
 	.scroll-to-top {
 		right: 16px;
 		bottom: 16px;
