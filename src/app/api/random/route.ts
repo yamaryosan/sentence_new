@@ -4,19 +4,20 @@ import { prisma } from "@/lib/prisma";
 
 const RANDOM_LIMIT = 200;
 
-type RandomSentenceRow = {
-	id: number;
-	content: string;
-};
-
 export async function GET() {
 	try {
-		const sentences = await prisma.$queryRaw<RandomSentenceRow[]>`
-			SELECT id, content
-			FROM "Sentence"
-			ORDER BY RANDOM()
-			LIMIT ${RANDOM_LIMIT}
-		`;
+		const totalCount = await prisma.sentence.count();
+		const take = Math.min(RANDOM_LIMIT, totalCount);
+		const maxSkip = Math.max(0, totalCount - take);
+		const skip = maxSkip === 0 ? 0 : Math.floor(Math.random() * (maxSkip + 1));
+		const sentences =
+			take === 0
+				? []
+				: await prisma.sentence.findMany({
+						orderBy: { id: "asc" },
+						skip,
+						take,
+				  });
 
 		return NextResponse.json({
 			sentences,
