@@ -12,7 +12,9 @@
 		"nextjs",
 		"postcss",
 		"prettier",
+		"sslaccept",
 		"tailwindcss",
+		"tidbcloud",
 		"tsconfig",
 		"tsx",
 		"turbopack"
@@ -22,6 +24,7 @@
 		".husky/_",
 		".next",
 		"node_modules",
+		"package.json",
 		"package-lock.json"
 	]
 }
