@@ -48,3 +48,21 @@ npm run dev
 ## CIの環境変数
 
 GitHub Actions では `DATABASE_URL` を workflow に直書きせず、`Settings > Secrets and variables > Actions` に `DATABASE_URL` secret として登録する。
+
+## Renderデプロイ
+
+`render.yaml` を追加してあるので、Render では Blueprint からこのリポジトリを読み込めば Web Service を作成できる。
+
+- Service name: `sentence-new`
+- Region: `oregon`
+- Plan: `free`
+- Branch: `main`
+- Auto-Deploy: `After CI Checks Pass`
+- URL: `https://sentence-new.onrender.com`
+
+Render 側では、少なくとも次の環境変数を登録する。
+
+- `DATABASE_URL`
+- `UPLOAD_VERIFY_PASSWORD`
+
+デプロイ時には `npm run prisma:migrate:deploy` を pre-deploy command として実行する。
