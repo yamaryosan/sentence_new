@@ -8,18 +8,16 @@ const SESSION_DURATION_MS = 1000 * 60 * 60 * 24 * 7;
 const SESSION_DURATION_SECONDS = SESSION_DURATION_MS / 1000;
 const MAX_FAILED_ATTEMPTS = 5;
 const LOCK_WINDOW_DURATION = "15 m";
+type RequiredEnvName =
+	| "ACCESS_PASSWORD"
+	| "AUTH_SECRET"
+	| "UPSTASH_REDIS_REST_URL"
+	| "UPSTASH_REDIS_REST_TOKEN";
 
 let redisClient: Redis | null = null;
 let loginFailRatelimit: Ratelimit | null = null;
 
-// 環境変数を安全に取得
-function getRequiredEnv(
-	name:
-		| "ACCESS_PASSWORD"
-		| "AUTH_SECRET"
-		| "UPSTASH_REDIS_REST_URL"
-		| "UPSTASH_REDIS_REST_TOKEN",
-) {
+function getRequiredEnv(name: RequiredEnvName) {
 	const value = process.env[name];
 
 	if (typeof value !== "string" || value.length === 0) {
@@ -29,13 +27,15 @@ function getRequiredEnv(
 	return value;
 }
 
+const authConfig = {
+	accessPassword: getRequiredEnv("ACCESS_PASSWORD"),
+	authSecretKey: new TextEncoder().encode(getRequiredEnv("AUTH_SECRET")),
+	upstashRedisRestUrl: getRequiredEnv("UPSTASH_REDIS_REST_URL"),
+	upstashRedisRestToken: getRequiredEnv("UPSTASH_REDIS_REST_TOKEN"),
+};
+
 function getNow() {
 	return Date.now();
-}
-
-// JWTの署名と検証に使用するキーを取得
-function getAuthSecretKey() {
-	return new TextEncoder().encode(getRequiredEnv("AUTH_SECRET"));
 }
 
 function getRedisClient() {
@@ -44,8 +44,8 @@ function getRedisClient() {
 	}
 
 	redisClient = new Redis({
-		url: getRequiredEnv("UPSTASH_REDIS_REST_URL"),
-		token: getRequiredEnv("UPSTASH_REDIS_REST_TOKEN"),
+		url: authConfig.upstashRedisRestUrl,
+		token: authConfig.upstashRedisRestToken,
 	});
 	return redisClient;
 }
@@ -57,7 +57,10 @@ function getLoginFailRatelimit() {
 
 	loginFailRatelimit = new Ratelimit({
 		redis: getRedisClient(),
-		limiter: Ratelimit.fixedWindow(MAX_FAILED_ATTEMPTS, LOCK_WINDOW_DURATION),
+		limiter: Ratelimit.slidingWindow(
+			MAX_FAILED_ATTEMPTS,
+			LOCK_WINDOW_DURATION,
+		),
 		prefix: "sentence-auth-login-fail",
 	});
 	return loginFailRatelimit;
@@ -82,12 +85,14 @@ export async function createSessionToken() {
 	return new SignJWT({})
 		.setProtectedHeader({ alg: "HS256" })
 		.setExpirationTime(`${SESSION_DURATION_SECONDS}s`)
-		.sign(getAuthSecretKey());
+		.sign(authConfig.authSecretKey);
 }
 
 export async function verifySessionToken(token: string) {
 	try {
-		await jwtVerify(token, getAuthSecretKey(), { algorithms: ["HS256"] });
+		await jwtVerify(token, authConfig.authSecretKey, {
+			algorithms: ["HS256"],
+		});
 		return true;
 	} catch {
 		return false;
@@ -105,8 +110,9 @@ export function getClientKey(request: Pick<NextRequest, "headers"> | Request) {
 
 export async function getLockStatus(key: string) {
 	const now = getNow();
-	const { remaining, reset } = await getLoginFailRatelimit().getRemaining(key);
-	const isLocked = remaining <= 0 && reset > now;
+	const { remaining, reset } =
+		await getLoginFailRatelimit().getRemaining(key);
+	const isLocked = remaining === 0 && reset > now;
 
 	return {
 		isLocked,
@@ -132,7 +138,7 @@ export async function clearFailedAttempts(key: string) {
 }
 
 export function isValidPassword(password: string) {
-	return timingSafeEqual(password, getRequiredEnv("ACCESS_PASSWORD"));
+	return timingSafeEqual(password, authConfig.accessPassword);
 }
 
 export function getSessionMaxAgeSeconds() {
