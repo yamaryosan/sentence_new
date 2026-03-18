@@ -34,10 +34,6 @@ const authConfig = {
 	upstashRedisRestToken: getRequiredEnv("UPSTASH_REDIS_REST_TOKEN"),
 };
 
-function getNow() {
-	return Date.now();
-}
-
 function getRedisClient() {
 	if (redisClient) {
 		return redisClient;
@@ -109,7 +105,7 @@ export function getClientKey(request: Pick<NextRequest, "headers"> | Request) {
 }
 
 export async function getLockStatus(key: string) {
-	const now = getNow();
+	const now = Date.now();
 	const { remaining, reset } =
 		await getLoginFailRatelimit().getRemaining(key);
 	const isLocked = remaining === 0 && reset > now;
@@ -121,7 +117,7 @@ export async function getLockStatus(key: string) {
 }
 
 export async function recordFailedAttempt(key: string) {
-	const now = getNow();
+	const now = Date.now();
 	const result = await getLoginFailRatelimit().limit(key);
 	const isLocked = !result.success;
 	const remainingMs = isLocked ? Math.max(0, result.reset - now) : 0;
