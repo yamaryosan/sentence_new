@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { Redis } from "@upstash/redis";
 import { jwtVerify, SignJWT } from "jose";
 
 export const AUTH_COOKIE_NAME = "sentence_auth";
@@ -13,20 +14,19 @@ type AttemptState = {
 };
 
 declare global {
-	var __sentenceAuthAttempts: Map<string, AttemptState> | undefined;
+	var __sentenceAuthRedis: Redis | undefined;
 }
 
-const attemptStore =
-	globalThis.__sentenceAuthAttempts ?? new Map<string, AttemptState>();
-
-if (!globalThis.__sentenceAuthAttempts) {
-	globalThis.__sentenceAuthAttempts = attemptStore;
-}
-
-function getRequiredEnv(name: "ACCESS_PASSWORD" | "AUTH_SECRET") {
+function getRequiredEnv(
+	name:
+		| "ACCESS_PASSWORD"
+		| "AUTH_SECRET"
+		| "UPSTASH_REDIS_REST_URL"
+		| "UPSTASH_REDIS_REST_TOKEN",
+) {
 	const value = process.env[name];
 
-	if (!value) {
+	if (typeof value !== "string" || value.length === 0) {
 		throw new Error(`${name} is not configured.`);
 	}
 
@@ -41,6 +41,20 @@ function getAuthSecretKey() {
 	return new TextEncoder().encode(getRequiredEnv("AUTH_SECRET"));
 }
 
+function getRedisClient() {
+	if (globalThis.__sentenceAuthRedis) {
+		return globalThis.__sentenceAuthRedis;
+	}
+
+	const client = new Redis({
+		url: getRequiredEnv("UPSTASH_REDIS_REST_URL"),
+		token: getRequiredEnv("UPSTASH_REDIS_REST_TOKEN"),
+	});
+
+	globalThis.__sentenceAuthRedis = client;
+	return client;
+}
+
 function pruneState(state: AttemptState, now: number) {
 	state.failedAt = state.failedAt.filter(
 		(timestamp) => now - timestamp < LOCK_WINDOW_MS,
@@ -51,17 +65,34 @@ function pruneState(state: AttemptState, now: number) {
 	}
 }
 
-function getOrCreateState(key: string, now: number) {
-	const existing = attemptStore.get(key);
+function getAttemptStateKey(key: string) {
+	return `auth:attempt:${key}`;
+}
 
-	if (existing) {
-		pruneState(existing, now);
-		return existing;
+async function loadAttemptState(key: string, now: number) {
+	const state =
+		(await getRedisClient().get<AttemptState>(getAttemptStateKey(key))) ?? {
+			failedAt: [],
+			lockedUntil: null,
+		};
+
+	pruneState(state, now);
+	return state;
+}
+
+async function saveAttemptState(key: string, state: AttemptState, now: number) {
+	let ttlSeconds = Math.ceil(LOCK_WINDOW_MS / 1000);
+
+	if (state.lockedUntil !== null && state.lockedUntil > now) {
+		ttlSeconds = Math.max(
+			ttlSeconds,
+			Math.ceil((state.lockedUntil - now) / 1000),
+		);
 	}
 
-	const state: AttemptState = { failedAt: [], lockedUntil: null };
-	attemptStore.set(key, state);
-	return state;
+	await getRedisClient().set(getAttemptStateKey(key), state, {
+		ex: Math.max(1, ttlSeconds),
+	});
 }
 
 function timingSafeEqual(a: string, b: string) {
@@ -102,9 +133,9 @@ export function getClientKey(request: Pick<NextRequest, "headers"> | Request) {
 	return `${ip}:${userAgent}`;
 }
 
-export function getLockStatus(key: string) {
+export async function getLockStatus(key: string) {
 	const now = getNow();
-	const state = getOrCreateState(key, now);
+	const state = await loadAttemptState(key, now);
 
 	return {
 		isLocked: state.lockedUntil !== null && state.lockedUntil > now,
@@ -115,9 +146,9 @@ export function getLockStatus(key: string) {
 	};
 }
 
-export function recordFailedAttempt(key: string) {
+export async function recordFailedAttempt(key: string) {
 	const now = getNow();
-	const state = getOrCreateState(key, now);
+	const state = await loadAttemptState(key, now);
 	state.failedAt.push(now);
 
 	if (state.failedAt.length >= MAX_FAILED_ATTEMPTS) {
@@ -125,7 +156,7 @@ export function recordFailedAttempt(key: string) {
 		state.failedAt = [];
 	}
 
-	attemptStore.set(key, state);
+	await saveAttemptState(key, state, now);
 
 	return {
 		isLocked: state.lockedUntil !== null && state.lockedUntil > now,
@@ -140,8 +171,8 @@ export function recordFailedAttempt(key: string) {
 	};
 }
 
-export function clearFailedAttempts(key: string) {
-	attemptStore.delete(key);
+export async function clearFailedAttempts(key: string) {
+	await getRedisClient().del(getAttemptStateKey(key));
 }
 
 export function isValidPassword(password: string) {
