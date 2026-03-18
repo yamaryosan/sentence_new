@@ -1,7 +1,9 @@
 import { NextRequest } from "next/server";
+import { jwtVerify, SignJWT } from "jose";
 
 export const AUTH_COOKIE_NAME = "sentence_auth";
 const SESSION_DURATION_MS = 1000 * 60 * 60 * 24 * 7;
+const SESSION_DURATION_SECONDS = SESSION_DURATION_MS / 1000;
 const LOCK_WINDOW_MS = 1000 * 60 * 15;
 const MAX_FAILED_ATTEMPTS = 5;
 
@@ -33,6 +35,10 @@ function getRequiredEnv(name: "ACCESS_PASSWORD" | "AUTH_SECRET") {
 
 function getNow() {
 	return Date.now();
+}
+
+function getAuthSecretKey() {
+	return new TextEncoder().encode(getRequiredEnv("AUTH_SECRET"));
 }
 
 function pruneState(state: AttemptState, now: number) {
@@ -72,47 +78,20 @@ function timingSafeEqual(a: string, b: string) {
 	return mismatch === 0;
 }
 
-async function sign(value: string) {
-	const secret = getRequiredEnv("AUTH_SECRET");
-	const encoder = new TextEncoder();
-	const key = await crypto.subtle.importKey(
-		"raw",
-		encoder.encode(secret),
-		{ name: "HMAC", hash: "SHA-256" },
-		false,
-		["sign"],
-	);
-	const signature = await crypto.subtle.sign(
-		"HMAC",
-		key,
-		encoder.encode(value),
-	);
-	return Array.from(new Uint8Array(signature), (byte) =>
-		byte.toString(16).padStart(2, "0"),
-	).join("");
-}
-
 export async function createSessionToken() {
-	const expiresAt = String(getNow() + SESSION_DURATION_MS);
-	const signature = await sign(expiresAt);
-	return `${expiresAt}.${signature}`;
+	return new SignJWT({})
+		.setProtectedHeader({ alg: "HS256" })
+		.setExpirationTime(`${SESSION_DURATION_SECONDS}s`)
+		.sign(getAuthSecretKey());
 }
 
 export async function verifySessionToken(token: string) {
-	const [expiresAt, actualSignature] = token.split(".");
-
-	if (!expiresAt || !actualSignature) {
+	try {
+		await jwtVerify(token, getAuthSecretKey(), { algorithms: ["HS256"] });
+		return true;
+	} catch {
 		return false;
 	}
-
-	const expiresAtNumber = Number(expiresAt);
-
-	if (!Number.isFinite(expiresAtNumber) || expiresAtNumber <= getNow()) {
-		return false;
-	}
-
-	const expectedSignature = await sign(expiresAt);
-	return timingSafeEqual(actualSignature, expectedSignature);
 }
 
 export function getClientKey(request: Pick<NextRequest, "headers"> | Request) {
@@ -170,7 +149,7 @@ export function isValidPassword(password: string) {
 }
 
 export function getSessionMaxAgeSeconds() {
-	return SESSION_DURATION_MS / 1000;
+	return SESSION_DURATION_SECONDS;
 }
 
 export function formatRemainingLockTime(remainingMs: number) {
