@@ -1,22 +1,18 @@
 import { NextRequest } from "next/server";
 import { Redis } from "@upstash/redis";
+import { Ratelimit } from "@upstash/ratelimit";
 import { jwtVerify, SignJWT } from "jose";
 
 export const AUTH_COOKIE_NAME = "sentence_auth";
 const SESSION_DURATION_MS = 1000 * 60 * 60 * 24 * 7;
 const SESSION_DURATION_SECONDS = SESSION_DURATION_MS / 1000;
-const LOCK_WINDOW_MS = 1000 * 60 * 15;
 const MAX_FAILED_ATTEMPTS = 5;
+const LOCK_WINDOW_DURATION = "15 m";
 
-type AttemptState = {
-	failedAt: number[];
-	lockedUntil: number | null;
-};
+let redisClient: Redis | null = null;
+let loginFailRatelimit: Ratelimit | null = null;
 
-declare global {
-	var __sentenceAuthRedis: Redis | undefined;
-}
-
+// 環境変数を安全に取得
 function getRequiredEnv(
 	name:
 		| "ACCESS_PASSWORD"
@@ -37,64 +33,37 @@ function getNow() {
 	return Date.now();
 }
 
+// JWTの署名と検証に使用するキーを取得
 function getAuthSecretKey() {
 	return new TextEncoder().encode(getRequiredEnv("AUTH_SECRET"));
 }
 
 function getRedisClient() {
-	if (globalThis.__sentenceAuthRedis) {
-		return globalThis.__sentenceAuthRedis;
+	if (redisClient) {
+		return redisClient;
 	}
 
-	const client = new Redis({
+	redisClient = new Redis({
 		url: getRequiredEnv("UPSTASH_REDIS_REST_URL"),
 		token: getRequiredEnv("UPSTASH_REDIS_REST_TOKEN"),
 	});
-
-	globalThis.__sentenceAuthRedis = client;
-	return client;
+	return redisClient;
 }
 
-function pruneState(state: AttemptState, now: number) {
-	state.failedAt = state.failedAt.filter(
-		(timestamp) => now - timestamp < LOCK_WINDOW_MS,
-	);
-
-	if (state.lockedUntil !== null && state.lockedUntil <= now) {
-		state.lockedUntil = null;
-	}
-}
-
-function getAttemptStateKey(key: string) {
-	return `auth:attempt:${key}`;
-}
-
-async function loadAttemptState(key: string, now: number) {
-	const state =
-		(await getRedisClient().get<AttemptState>(getAttemptStateKey(key))) ?? {
-			failedAt: [],
-			lockedUntil: null,
-		};
-
-	pruneState(state, now);
-	return state;
-}
-
-async function saveAttemptState(key: string, state: AttemptState, now: number) {
-	let ttlSeconds = Math.ceil(LOCK_WINDOW_MS / 1000);
-
-	if (state.lockedUntil !== null && state.lockedUntil > now) {
-		ttlSeconds = Math.max(
-			ttlSeconds,
-			Math.ceil((state.lockedUntil - now) / 1000),
-		);
+function getLoginFailRatelimit() {
+	if (loginFailRatelimit) {
+		return loginFailRatelimit;
 	}
 
-	await getRedisClient().set(getAttemptStateKey(key), state, {
-		ex: Math.max(1, ttlSeconds),
+	loginFailRatelimit = new Ratelimit({
+		redis: getRedisClient(),
+		limiter: Ratelimit.fixedWindow(MAX_FAILED_ATTEMPTS, LOCK_WINDOW_DURATION),
+		prefix: "sentence-auth-login-fail",
 	});
+	return loginFailRatelimit;
 }
 
+// タイミング攻撃に対する安全な文字列比較
 function timingSafeEqual(a: string, b: string) {
 	if (a.length !== b.length) {
 		return false;
@@ -125,6 +94,7 @@ export async function verifySessionToken(token: string) {
 	}
 }
 
+// クライアントを一意に識別するキーを生成
 export function getClientKey(request: Pick<NextRequest, "headers"> | Request) {
 	const forwardedFor = request.headers.get("x-forwarded-for");
 	const realIp = request.headers.get("x-real-ip");
@@ -135,44 +105,30 @@ export function getClientKey(request: Pick<NextRequest, "headers"> | Request) {
 
 export async function getLockStatus(key: string) {
 	const now = getNow();
-	const state = await loadAttemptState(key, now);
+	const { remaining, reset } = await getLoginFailRatelimit().getRemaining(key);
+	const isLocked = remaining <= 0 && reset > now;
 
 	return {
-		isLocked: state.lockedUntil !== null && state.lockedUntil > now,
-		remainingMs:
-			state.lockedUntil !== null && state.lockedUntil > now
-				? state.lockedUntil - now
-				: 0,
+		isLocked,
+		remainingMs: isLocked ? reset - now : 0,
 	};
 }
 
 export async function recordFailedAttempt(key: string) {
 	const now = getNow();
-	const state = await loadAttemptState(key, now);
-	state.failedAt.push(now);
-
-	if (state.failedAt.length >= MAX_FAILED_ATTEMPTS) {
-		state.lockedUntil = now + LOCK_WINDOW_MS;
-		state.failedAt = [];
-	}
-
-	await saveAttemptState(key, state, now);
+	const result = await getLoginFailRatelimit().limit(key);
+	const isLocked = !result.success;
+	const remainingMs = isLocked ? Math.max(0, result.reset - now) : 0;
 
 	return {
-		isLocked: state.lockedUntil !== null && state.lockedUntil > now,
-		remainingMs:
-			state.lockedUntil !== null && state.lockedUntil > now
-				? state.lockedUntil - now
-				: 0,
-		remainingAttempts: Math.max(
-			0,
-			MAX_FAILED_ATTEMPTS - state.failedAt.length,
-		),
+		isLocked,
+		remainingMs,
+		remainingAttempts: Math.max(0, result.remaining),
 	};
 }
 
 export async function clearFailedAttempts(key: string) {
-	await getRedisClient().del(getAttemptStateKey(key));
+	await getLoginFailRatelimit().resetUsedTokens(key);
 }
 
 export function isValidPassword(password: string) {
