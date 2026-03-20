@@ -64,5 +64,22 @@ Render 側では、少なくとも次の環境変数を登録する。
 
 - `DATABASE_URL`
 - `UPLOAD_VERIFY_PASSWORD`
+- `ACCESS_PASSWORD`
+- `AUTH_SECRET`
+- `UPSTASH_REDIS_REST_URL`
+- `UPSTASH_REDIS_REST_TOKEN`
 
 デプロイ時には `npm run prisma:migrate:deploy` を pre-deploy command として実行する。
+
+## 閲覧用パスワード認証
+
+- `/` は公開
+- それ以外のページと API はログイン必須
+- 直近15分で5回まで失敗可能（6回目以降は時間経過で順次解除）
+
+必要な環境変数:
+
+- `ACCESS_PASSWORD`: ログイン用パスワード
+- `AUTH_SECRET`: 認証クッキー署名用の長いランダム文字列
+- `UPSTASH_REDIS_REST_URL`: Upstash Redis の REST URL
+- `UPSTASH_REDIS_REST_TOKEN`: Upstash Redis の REST Token
