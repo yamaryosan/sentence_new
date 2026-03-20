@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
 	AUTH_COOKIE_NAME,
+	clearFailedAttempts,
 	createSessionToken,
 	formatRemainingLockTime,
 	getClientKey,
@@ -42,6 +43,8 @@ export async function POST(request: NextRequest) {
 			return NextResponse.json({ error: errorMessage }, { status: 401 });
 		}
 
+		await clearFailedAttempts(clientKey);
+
 		const response = NextResponse.json({ ok: true });
 
 		response.cookies.set({
@@ -62,8 +65,12 @@ export async function POST(request: NextRequest) {
 			if (
 				error.message.includes("ACCESS_PASSWORD is not configured") ||
 				error.message.includes("AUTH_SECRET is not configured") ||
-				error.message.includes("UPSTASH_REDIS_REST_URL is not configured") ||
-				error.message.includes("UPSTASH_REDIS_REST_TOKEN is not configured")
+				error.message.includes(
+					"UPSTASH_REDIS_REST_URL is not configured",
+				) ||
+				error.message.includes(
+					"UPSTASH_REDIS_REST_TOKEN is not configured",
+				)
 			) {
 				return NextResponse.json(
 					{ error: error.message },
