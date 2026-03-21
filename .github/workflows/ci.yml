@@ -13,6 +13,7 @@ jobs:
             CI: true
             HUSKY: 0
             DATABASE_URL: ${{ secrets.DATABASE_URL }}
+            ACCESS_PASSWORD: ${{ secrets.ACCESS_PASSWORD }}
 
         steps:
             - name: Checkout
