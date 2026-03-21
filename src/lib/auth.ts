@@ -62,21 +62,6 @@ function getLoginFailRatelimit() {
 	return loginFailRatelimit;
 }
 
-// タイミング攻撃に対する安全な文字列比較
-function timingSafeEqual(a: string, b: string) {
-	if (a.length !== b.length) {
-		return false;
-	}
-
-	let mismatch = 0;
-
-	for (let index = 0; index < a.length; index += 1) {
-		mismatch |= a.charCodeAt(index) ^ b.charCodeAt(index);
-	}
-
-	return mismatch === 0;
-}
-
 export async function createSessionToken() {
 	return new SignJWT({})
 		.setProtectedHeader({ alg: "HS256" })
@@ -134,7 +119,7 @@ export async function clearFailedAttempts(key: string) {
 }
 
 export function isValidPassword(password: string) {
-	return timingSafeEqual(password, authConfig.accessPassword);
+	return password === authConfig.accessPassword;
 }
 
 export function getSessionMaxAgeSeconds() {
