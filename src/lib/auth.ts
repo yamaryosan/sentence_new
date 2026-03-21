@@ -27,12 +27,28 @@ function getRequiredEnv(name: RequiredEnvName) {
 	return value;
 }
 
-const authConfig = {
-	accessPassword: getRequiredEnv("ACCESS_PASSWORD"),
-	authSecretKey: new TextEncoder().encode(getRequiredEnv("AUTH_SECRET")),
-	upstashRedisRestUrl: getRequiredEnv("UPSTASH_REDIS_REST_URL"),
-	upstashRedisRestToken: getRequiredEnv("UPSTASH_REDIS_REST_TOKEN"),
+type AuthConfig = {
+	accessPassword: string;
+	authSecretKey: Uint8Array;
+	upstashRedisRestUrl: string;
+	upstashRedisRestToken: string;
 };
+
+let authConfig: AuthConfig | null = null;
+
+function getAuthConfig() {
+	if (authConfig) {
+		return authConfig;
+	}
+
+	authConfig = {
+		accessPassword: getRequiredEnv("ACCESS_PASSWORD"),
+		authSecretKey: new TextEncoder().encode(getRequiredEnv("AUTH_SECRET")),
+		upstashRedisRestUrl: getRequiredEnv("UPSTASH_REDIS_REST_URL"),
+		upstashRedisRestToken: getRequiredEnv("UPSTASH_REDIS_REST_TOKEN"),
+	};
+	return authConfig;
+}
 
 function getRedisClient() {
 	if (redisClient) {
@@ -40,8 +56,8 @@ function getRedisClient() {
 	}
 
 	redisClient = new Redis({
-		url: authConfig.upstashRedisRestUrl,
-		token: authConfig.upstashRedisRestToken,
+		url: getAuthConfig().upstashRedisRestUrl,
+		token: getAuthConfig().upstashRedisRestToken,
 	});
 	return redisClient;
 }
@@ -66,12 +82,12 @@ export async function createSessionToken() {
 	return new SignJWT({})
 		.setProtectedHeader({ alg: "HS256" })
 		.setExpirationTime(`${SESSION_DURATION_SECONDS}s`)
-		.sign(authConfig.authSecretKey);
+		.sign(getAuthConfig().authSecretKey);
 }
 
 export async function verifySessionToken(token: string) {
 	try {
-		await jwtVerify(token, authConfig.authSecretKey, {
+		await jwtVerify(token, getAuthConfig().authSecretKey, {
 			algorithms: ["HS256"],
 		});
 		return true;
@@ -119,7 +135,7 @@ export async function clearFailedAttempts(key: string) {
 }
 
 export function isValidPassword(password: string) {
-	return password === authConfig.accessPassword;
+	return password === getAuthConfig().accessPassword;
 }
 
 export function getSessionMaxAgeSeconds() {
