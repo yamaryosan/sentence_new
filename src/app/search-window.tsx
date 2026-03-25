@@ -1,6 +1,7 @@
 "use client";
 
-import { type SubmitEventHandler, useState } from "react";
+import { type SubmitEventHandler, useEffect, useState } from "react";
+import { UNSAFE_SEARCH_MODE_STORAGE_KEY } from "@/lib/search-config";
 import SentenceCard from "./sentence-card";
 
 type Sentence = {
@@ -17,11 +18,23 @@ export default function SearchWindow() {
 	const [error, setError] = useState("");
 	const [hasSearched, setHasSearched] = useState(false);
 	const [sort, setSort] = useState<SortOption>("id-asc");
+	const [isUnsafeSearchModeEnabled, setIsUnsafeSearchModeEnabled] =
+		useState(false);
 
-	const fetchResults = async (nextQuery: string, nextSort: SortOption) => {
+	useEffect(() => {
+		const saved = localStorage.getItem(UNSAFE_SEARCH_MODE_STORAGE_KEY);
+		setIsUnsafeSearchModeEnabled(saved === "true");
+	}, []);
+
+	const fetchResults = async (
+		nextQuery: string,
+		nextSort: SortOption,
+		nextUnsafeMode: boolean,
+	) => {
 		const params = new URLSearchParams({
 			q: nextQuery,
 			sort: nextSort,
+			unsafeMode: String(nextUnsafeMode),
 		});
 		const response = await fetch(`/api/search?${params.toString()}`);
 		const data = (await response.json()) as
@@ -50,7 +63,11 @@ export default function SearchWindow() {
 		setError("");
 
 		try {
-			const sentences = await fetchResults(trimmed, sort);
+			const sentences = await fetchResults(
+				trimmed,
+				sort,
+				isUnsafeSearchModeEnabled,
+			);
 			setResults(sentences);
 			setHasSearched(true);
 		} catch (caughtError) {
@@ -82,7 +99,11 @@ export default function SearchWindow() {
 		setError("");
 
 		try {
-			const sentences = await fetchResults(trimmed, nextSort);
+			const sentences = await fetchResults(
+				trimmed,
+				nextSort,
+				isUnsafeSearchModeEnabled,
+			);
 			setResults(sentences);
 		} catch (caughtError) {
 			setError(

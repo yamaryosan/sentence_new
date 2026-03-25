@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { UNSAFE_TERMS } from "@/lib/unsafe-terms";
 
 const MAX_QUERY_LENGTH = 40;
 
@@ -8,6 +9,8 @@ export async function GET(request: NextRequest) {
 	const rawQuery = request.nextUrl.searchParams.get("q") ?? "";
 	const query = rawQuery.trim();
 	const sort = request.nextUrl.searchParams.get("sort");
+	const isUnsafeSearchModeEnabled =
+		request.nextUrl.searchParams.get("unsafeMode") === "true";
 
 	if (query.length === 0) {
 		return NextResponse.json(
@@ -26,12 +29,22 @@ export async function GET(request: NextRequest) {
 	}
 
 	try {
-		const sentences = await prisma.sentence.findMany({
-			where: {
-				content: {
-					contains: query,
-				},
+		const baseWhere: Prisma.SentenceWhereInput = {
+			content: {
+				contains: query,
 			},
+		};
+		const unsafeTermFilters = UNSAFE_TERMS.map((term) => ({
+			content: { contains: term },
+		}));
+		const where: Prisma.SentenceWhereInput = isUnsafeSearchModeEnabled
+			? baseWhere
+			: {
+					AND: [baseWhere, { NOT: { OR: unsafeTermFilters } }],
+				};
+
+		const sentences = await prisma.sentence.findMany({
+			where,
 			orderBy:
 				sort === "content-asc"
 					? [{ content: "asc" }, { id: "asc" }]

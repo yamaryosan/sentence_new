@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-
-const TABOO_SEARCH_MODE_STORAGE_KEY = "taboo-search-mode-enabled";
+import { UNSAFE_SEARCH_MODE_STORAGE_KEY } from "@/lib/search-config";
 
 export default function ConfigForm() {
 	const [isReady, setIsReady] = useState(false);
@@ -11,7 +10,7 @@ export default function ConfigForm() {
 
 	useEffect(() => {
 		try {
-			const saved = localStorage.getItem(TABOO_SEARCH_MODE_STORAGE_KEY);
+			const saved = localStorage.getItem(UNSAFE_SEARCH_MODE_STORAGE_KEY);
 			setIsTabooSearchModeEnabled(saved === "true");
 		} finally {
 			setIsReady(true);
@@ -20,7 +19,7 @@ export default function ConfigForm() {
 
 	const handleToggle = (checked: boolean) => {
 		setIsTabooSearchModeEnabled(checked);
-		localStorage.setItem(TABOO_SEARCH_MODE_STORAGE_KEY, String(checked));
+		localStorage.setItem(UNSAFE_SEARCH_MODE_STORAGE_KEY, String(checked));
 	};
 
 	return (
