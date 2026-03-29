@@ -1,7 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { UNSAFE_TERMS } from "@/lib/unsafe-terms";
 
 const MAX_QUERY_LENGTH = 40;
 
@@ -29,18 +28,24 @@ export async function GET(request: NextRequest) {
 	}
 
 	try {
+		const unsafeTerms = await prisma.unsafeTerm.findMany({
+			select: { term: true },
+		});
 		const baseWhere: Prisma.SentenceWhereInput = {
 			content: {
 				contains: query,
 			},
 		};
-		const unsafeTermFilters = UNSAFE_TERMS.map((term) => ({
+		const unsafeTermFilters = unsafeTerms.map(({ term }) => ({
 			content: { contains: term },
 		}));
 		const where: Prisma.SentenceWhereInput = isUnsafeSearchModeEnabled
 			? baseWhere
 			: {
-					AND: [baseWhere, { NOT: { OR: unsafeTermFilters } }],
+					AND:
+						unsafeTermFilters.length > 0
+							? [baseWhere, { NOT: { OR: unsafeTermFilters } }]
+							: [baseWhere],
 				};
 
 		const sentences = await prisma.sentence.findMany({
@@ -59,7 +64,7 @@ export async function GET(request: NextRequest) {
 		) {
 			return NextResponse.json(
 				{
-					error: "Sentenceテーブルが存在しません。`npm run prisma:migrate` を実行してください。",
+					error: "必要なテーブルが存在しません。`npm run prisma:migrate` を実行してください。",
 				},
 				{ status: 500 },
 			);

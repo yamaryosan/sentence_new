@@ -52,15 +52,27 @@ const adapter = isTiDBCloud
 	  })
 	: createMariaDbAdapter();
 
-export const prisma =
-	globalForPrisma.prisma ??
-	new PrismaClient({
+function createPrismaClient() {
+	return new PrismaClient({
 		adapter,
 		log:
 			process.env.NODE_ENV === "development"
 				? ["error", "warn"]
 				: ["error"],
 	});
+}
+
+function hasRequiredDelegates(client: PrismaClient) {
+	const candidate = client as unknown as Record<string, unknown>;
+	return "sentence" in candidate && "unsafeTerm" in candidate;
+}
+
+const cachedPrisma = globalForPrisma.prisma;
+
+export const prisma =
+	cachedPrisma && hasRequiredDelegates(cachedPrisma)
+		? cachedPrisma
+		: createPrismaClient();
 
 if (process.env.NODE_ENV !== "production") {
 	globalForPrisma.prisma = prisma;
