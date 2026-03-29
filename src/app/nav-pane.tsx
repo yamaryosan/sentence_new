@@ -5,6 +5,7 @@ import { AUTH_COOKIE_NAME, verifySessionToken } from "@/lib/auth";
 
 const navItems = [
 	{ href: "/search", label: "検索" },
+	{ href: "/config", label: "設定" },
 	{ href: "/view", label: "閲覧" },
 	{ href: "/random", label: "ランダム表示" },
 	{ href: "/upload", label: "アップロード" },

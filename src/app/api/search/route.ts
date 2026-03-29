@@ -8,6 +8,8 @@ export async function GET(request: NextRequest) {
 	const rawQuery = request.nextUrl.searchParams.get("q") ?? "";
 	const query = rawQuery.trim();
 	const sort = request.nextUrl.searchParams.get("sort");
+	const isUnsafeSearchModeEnabled =
+		request.nextUrl.searchParams.get("unsafeMode") === "true";
 
 	if (query.length === 0) {
 		return NextResponse.json(
@@ -26,12 +28,28 @@ export async function GET(request: NextRequest) {
 	}
 
 	try {
-		const sentences = await prisma.sentence.findMany({
-			where: {
-				content: {
-					contains: query,
-				},
+		const unsafeTerms = await prisma.unsafeTerm.findMany({
+			select: { term: true },
+		});
+		const baseWhere: Prisma.SentenceWhereInput = {
+			content: {
+				contains: query,
 			},
+		};
+		const unsafeTermFilters = unsafeTerms.map(({ term }) => ({
+			content: { contains: term },
+		}));
+		const where: Prisma.SentenceWhereInput = isUnsafeSearchModeEnabled
+			? baseWhere
+			: {
+					AND:
+						unsafeTermFilters.length > 0
+							? [baseWhere, { NOT: { OR: unsafeTermFilters } }]
+							: [baseWhere],
+				};
+
+		const sentences = await prisma.sentence.findMany({
+			where,
 			orderBy:
 				sort === "content-asc"
 					? [{ content: "asc" }, { id: "asc" }]
@@ -46,7 +64,7 @@ export async function GET(request: NextRequest) {
 		) {
 			return NextResponse.json(
 				{
-					error: "Sentenceテーブルが存在しません。`npm run prisma:migrate` を実行してください。",
+					error: "必要なテーブルが存在しません。`npm run prisma:migrate` を実行してください。",
 				},
 				{ status: 500 },
 			);
