@@ -14,6 +14,7 @@ export default function ConfigForm() {
 	const [isUnsafeSearchModeEnabled, setIsUnsafeSearchModeEnabled] =
 		useState(false);
 	const [unsafeTerms, setUnsafeTerms] = useState<UnsafeTerm[]>([]);
+	const [isUnsafeTermsVisible, setIsUnsafeTermsVisible] = useState(false);
 	const [nextTerm, setNextTerm] = useState("");
 	const [isTermLoading, setIsTermLoading] = useState(false);
 	const [termError, setTermError] = useState("");
@@ -153,6 +154,13 @@ export default function ConfigForm() {
 					<button type="button" onClick={() => void fetchUnsafeTerms()}>
 						再読込
 					</button>
+					<button
+						type="button"
+						onClick={() => setIsUnsafeTermsVisible((current) => !current)}
+						disabled={unsafeTerms.length === 0}
+					>
+						{isUnsafeTermsVisible ? "非表示" : "表示"}
+					</button>
 				</div>
 				{termError && <p className="m-0 text-sm">{termError}</p>}
 				{isTermLoading && <p className="m-0 text-sm">処理中...</p>}
@@ -165,7 +173,11 @@ export default function ConfigForm() {
 					<ul className="m-0 list-disc space-y-1 pl-5">
 						{unsafeTerms.map((unsafeTerm) => (
 							<li key={unsafeTerm.id} className="flex items-center gap-2">
-								<span>{unsafeTerm.term}</span>
+								<span>
+									{isUnsafeTermsVisible
+										? unsafeTerm.term
+										: "*".repeat(unsafeTerm.term.length)}
+								</span>
 								<button
 									type="button"
 									className="px-2 py-1 text-xs"
