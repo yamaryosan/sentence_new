@@ -2,88 +2,39 @@
 
 import { type SubmitEventHandler, useEffect, useState } from "react";
 import { UNSAFE_SEARCH_MODE_STORAGE_KEY } from "@/lib/search-config";
+import { type SortOption, useSearchSentences } from "./use-search-sentences";
 import SentenceCard from "./sentence-card";
-
-type Sentence = {
-	id: number;
-	content: string;
-};
-
-type SortOption = "id-asc" | "content-asc";
 
 export default function SearchWindow() {
 	const [query, setQuery] = useState("");
-	const [results, setResults] = useState<Sentence[]>([]);
-	const [isLoading, setIsLoading] = useState(false);
-	const [error, setError] = useState("");
-	const [hasSearched, setHasSearched] = useState(false);
 	const [sort, setSort] = useState<SortOption>("id-asc");
 	const [isUnsafeSearchModeEnabled, setIsUnsafeSearchModeEnabled] =
 		useState(false);
+	const { results, error, hasSearched, isLoading, searchSentences, markEmptyQuery } =
+		useSearchSentences();
 
 	useEffect(() => {
 		const saved = localStorage.getItem(UNSAFE_SEARCH_MODE_STORAGE_KEY);
 		setIsUnsafeSearchModeEnabled(saved === "true");
 	}, []);
 
-	const fetchResults = async (
-		nextQuery: string,
-		nextSort: SortOption,
-		nextUnsafeMode: boolean,
-	) => {
-		const params = new URLSearchParams({
-			q: nextQuery,
-			sort: nextSort,
-			unsafeMode: String(nextUnsafeMode),
-		});
-		const response = await fetch(`/api/search?${params.toString()}`);
-		const data = (await response.json()) as
-			| { sentences: Sentence[] }
-			| { error: string };
-
-		if (!response.ok || "error" in data) {
-			throw new Error("error" in data ? data.error : "検索に失敗しました。");
-		}
-
-		return data.sentences;
-	};
-
-	const handleSubmit: SubmitEventHandler<HTMLFormElement> = async (event) => {
+	const handleSubmit: SubmitEventHandler<HTMLFormElement> = (event) => {
 		event.preventDefault();
 		const trimmed = query.trim();
 
 		if (trimmed.length === 0) {
-			setError("検索キーワードを入力してください。");
-			setResults([]);
-			setHasSearched(false);
+			markEmptyQuery("検索キーワードを入力してください。");
 			return;
 		}
 
-		setIsLoading(true);
-		setError("");
-
-		try {
-			const sentences = await fetchResults(
-				trimmed,
-				sort,
-				isUnsafeSearchModeEnabled,
-			);
-			setResults(sentences);
-			setHasSearched(true);
-		} catch (caughtError) {
-			setError(
-				caughtError instanceof Error
-					? caughtError.message
-					: "通信エラーが発生しました。",
-			);
-			setResults([]);
-			setHasSearched(false);
-		} finally {
-			setIsLoading(false);
-		}
+		searchSentences({
+			query: trimmed,
+			sort,
+			unsafeMode: isUnsafeSearchModeEnabled,
+		});
 	};
 
-	const handleSortChange = async (nextSort: SortOption) => {
+	const handleSortChange = (nextSort: SortOption) => {
 		setSort(nextSort);
 
 		if (!hasSearched) {
@@ -95,27 +46,11 @@ export default function SearchWindow() {
 			return;
 		}
 
-		setIsLoading(true);
-		setError("");
-
-		try {
-			const sentences = await fetchResults(
-				trimmed,
-				nextSort,
-				isUnsafeSearchModeEnabled,
-			);
-			setResults(sentences);
-		} catch (caughtError) {
-			setError(
-				caughtError instanceof Error
-					? caughtError.message
-					: "通信エラーが発生しました。",
-			);
-			setResults([]);
-			setHasSearched(false);
-		} finally {
-			setIsLoading(false);
-		}
+		searchSentences({
+			query: trimmed,
+			sort: nextSort,
+			unsafeMode: isUnsafeSearchModeEnabled,
+		});
 	};
 
 	return (
@@ -137,7 +72,7 @@ export default function SearchWindow() {
 				id="search-sort"
 				value={sort}
 				onChange={(event) =>
-					void handleSortChange(event.target.value as SortOption)
+					handleSortChange(event.target.value as SortOption)
 				}
 				disabled={isLoading}
 			>
