@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import NavPane from "./nav-pane";
+import Providers from "./providers";
 import ScrollToTopButton from "./scroll-to-top-button";
 
 const geistSans = Geist({
@@ -29,13 +30,15 @@ export default function RootLayout({
 			<body
 				className={`${geistSans.variable} ${geistMono.variable} antialiased`}
 			>
-				<div className="flex min-h-screen flex-col md:flex-row">
-					<NavPane />
-					<main className="order-2 flex-1 p-4 md:order-1 md:p-6">
-						<section className="mt-4 md:mt-8">{children}</section>
-					</main>
-					<ScrollToTopButton />
-				</div>
+				<Providers>
+					<div className="flex min-h-screen flex-col md:flex-row">
+						<NavPane />
+						<main className="order-2 flex-1 p-4 md:order-1 md:p-6">
+							<section className="mt-4 md:mt-8">{children}</section>
+						</main>
+						<ScrollToTopButton />
+					</div>
+				</Providers>
 			</body>
 		</html>
 	);
