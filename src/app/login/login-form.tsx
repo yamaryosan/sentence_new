@@ -1,47 +1,16 @@
 "use client";
 
-import { FormEvent, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { type SubmitEventHandler, useState } from "react";
+import { useLoginAction } from "./use-login-action";
 
 export default function LoginForm() {
-	const router = useRouter();
-	const searchParams = useSearchParams();
 	const [password, setPassword] = useState("");
-	const [errorMessage, setErrorMessage] = useState<string | null>(null);
-	const [isSubmitting, setIsSubmitting] = useState(false);
+	const { errorMessage, isSubmitting, submitLogin } = useLoginAction();
 
-	async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+	const handleSubmit: SubmitEventHandler<HTMLFormElement> = (event) => {
 		event.preventDefault();
-		setIsSubmitting(true);
-		setErrorMessage(null);
-
-		const nextPath = searchParams.get("next") ?? "/search";
-
-		try {
-			const response = await fetch("/api/auth/login", {
-				method: "POST",
-				headers: {
-					"content-type": "application/json",
-				},
-				body: JSON.stringify({
-					password,
-				}),
-			});
-			const data = (await response.json()) as { error?: string };
-
-			if (!response.ok) {
-				setErrorMessage(data.error ?? "ログインに失敗しました。");
-				return;
-			}
-
-			router.replace(nextPath);
-			router.refresh();
-		} catch {
-			setErrorMessage("ログイン中に通信エラーが発生しました。");
-		} finally {
-			setIsSubmitting(false);
-		}
-	}
+		submitLogin(password);
+	};
 
 	return (
 		<form className="mt-6 max-w-md space-y-4" onSubmit={handleSubmit}>
