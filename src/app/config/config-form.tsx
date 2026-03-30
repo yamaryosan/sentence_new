@@ -2,22 +2,23 @@
 
 import { useEffect, useState } from "react";
 import { UNSAFE_SEARCH_MODE_STORAGE_KEY } from "@/lib/search-config";
-
-type UnsafeTerm = {
-	id: number;
-	term: string;
-	createdAt: string;
-};
+import { useUnsafeTerms } from "./use-unsafe-terms";
 
 export default function ConfigForm() {
 	const [isReady, setIsReady] = useState(false);
 	const [isUnsafeSearchModeEnabled, setIsUnsafeSearchModeEnabled] =
 		useState(false);
-	const [unsafeTerms, setUnsafeTerms] = useState<UnsafeTerm[]>([]);
 	const [isUnsafeTermsVisible, setIsUnsafeTermsVisible] = useState(false);
 	const [nextTerm, setNextTerm] = useState("");
-	const [isTermLoading, setIsTermLoading] = useState(false);
-	const [termError, setTermError] = useState("");
+	const {
+		unsafeTerms,
+		termError,
+		setTermError,
+		isTermLoading,
+		addTerm,
+		deleteTerm,
+		refetchUnsafeTerms,
+	} = useUnsafeTerms();
 
 	useEffect(() => {
 		try {
@@ -28,98 +29,28 @@ export default function ConfigForm() {
 		}
 	}, []);
 
-	const fetchUnsafeTerms = async () => {
-		setIsTermLoading(true);
-		setTermError("");
-
-		try {
-			const response = await fetch("/api/unsafe-terms");
-			const data = (await response.json()) as
-				| { terms: UnsafeTerm[] }
-				| { error: string };
-			if (!response.ok || "error" in data) {
-				throw new Error(
-					"error" in data
-						? data.error
-						: "アンセーフ用語一覧の取得に失敗しました。",
-				);
-			}
-			setUnsafeTerms(data.terms);
-		} catch (error) {
-			setTermError(
-				error instanceof Error
-					? error.message
-					: "アンセーフ用語一覧の取得に失敗しました。",
-			);
-		} finally {
-			setIsTermLoading(false);
-		}
-	};
-
-	useEffect(() => {
-		void fetchUnsafeTerms();
-	}, []);
-
 	const handleToggle = (checked: boolean) => {
 		setIsUnsafeSearchModeEnabled(checked);
 		localStorage.setItem(UNSAFE_SEARCH_MODE_STORAGE_KEY, String(checked));
 	};
 
-	const handleAddTerm = async () => {
+	const handleAddTerm = () => {
 		const trimmed = nextTerm.trim();
 		if (trimmed.length === 0) {
 			setTermError("追加する用語を入力してください。");
 			return;
 		}
 
-		setIsTermLoading(true);
-		setTermError("");
-
-		try {
-			const response = await fetch("/api/unsafe-terms", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ term: trimmed }),
-			});
-			const data = (await response.json()) as
-				| { term: UnsafeTerm }
-				| { error: string };
-			if (!response.ok || "error" in data) {
-				throw new Error("error" in data ? data.error : "用語の追加に失敗しました。");
-			}
-
-			setUnsafeTerms((current) => [data.term, ...current]);
-			setNextTerm("");
-		} catch (error) {
-			setTermError(
-				error instanceof Error ? error.message : "用語の追加に失敗しました。",
-			);
-		} finally {
-			setIsTermLoading(false);
-		}
+		addTerm(trimmed);
+		setNextTerm("");
 	};
 
-	const handleDeleteTerm = async (id: number) => {
-		setIsTermLoading(true);
-		setTermError("");
+	const handleDeleteTerm = (id: number) => {
+		deleteTerm(id);
+	};
 
-		try {
-			const response = await fetch(`/api/unsafe-terms?id=${id}`, {
-				method: "DELETE",
-			});
-			const data = (await response.json()) as { id: number } | { error: string };
-			if (!response.ok || "error" in data) {
-				throw new Error("error" in data ? data.error : "用語の削除に失敗しました。");
-			}
-
-			setUnsafeTerms((current) => current.filter((term) => term.id !== id));
-		} catch (error) {
-			setTermError(
-				error instanceof Error ? error.message : "用語の削除に失敗しました。",
-			);
-		} finally {
-			setIsTermLoading(false);
-		}
+	const handleRefetch = () => {
+		refetchUnsafeTerms();
 	};
 
 	return (
@@ -148,10 +79,10 @@ export default function ConfigForm() {
 						placeholder="追加する用語"
 						disabled={isTermLoading}
 					/>
-					<button type="button" onClick={() => void handleAddTerm()}>
+					<button type="button" onClick={handleAddTerm} disabled={isTermLoading}>
 						追加
 					</button>
-					<button type="button" onClick={() => void fetchUnsafeTerms()}>
+					<button type="button" onClick={handleRefetch} disabled={isTermLoading}>
 						再読込
 					</button>
 					<button
@@ -181,7 +112,7 @@ export default function ConfigForm() {
 								<button
 									type="button"
 									className="px-2 py-1 text-xs"
-									onClick={() => void handleDeleteTerm(unsafeTerm.id)}
+									onClick={() => handleDeleteTerm(unsafeTerm.id)}
 									disabled={isTermLoading}
 								>
 									削除
