@@ -1,7 +1,7 @@
 "use client";
 
 import { type SubmitEventHandler } from "react";
-import { useUploadActions } from "./use-upload-actions";
+import { useUploadActions } from "@/hooks/use-upload-actions";
 
 export default function UploadForm() {
 	const {

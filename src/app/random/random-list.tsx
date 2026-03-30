@@ -1,7 +1,7 @@
 "use client";
 
 import SentenceCard from "../sentence-card";
-import { useRandomSentences } from "./use-random-sentences";
+import { useRandomSentences } from "@/hooks/use-random-sentences";
 
 export default function RandomList() {
 	const { sentences, limit, isLoading, isRefreshing, error, shuffle } =

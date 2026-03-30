@@ -1,7 +1,7 @@
 "use client";
 
 import { type SubmitEventHandler, useState } from "react";
-import { useLoginAction } from "./use-login-action";
+import { useLoginAction } from "@/hooks/use-login-action";
 
 export default function LoginForm() {
 	const [password, setPassword] = useState("");

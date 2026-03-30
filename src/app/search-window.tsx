@@ -2,7 +2,7 @@
 
 import { type SubmitEventHandler, useEffect, useState } from "react";
 import { UNSAFE_SEARCH_MODE_STORAGE_KEY } from "@/lib/search-config";
-import { type SortOption, useSearchSentences } from "./use-search-sentences";
+import { type SortOption, useSearchSentences } from "@/hooks/use-search-sentences";
 import SentenceCard from "./sentence-card";
 
 export default function SearchWindow() {

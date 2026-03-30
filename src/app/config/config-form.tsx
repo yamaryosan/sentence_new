@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { UNSAFE_SEARCH_MODE_STORAGE_KEY } from "@/lib/search-config";
-import { useUnsafeTerms } from "./use-unsafe-terms";
+import { useUnsafeTerms } from "@/hooks/use-unsafe-terms";
 
 export default function ConfigForm() {
 	const [isReady, setIsReady] = useState(false);
