@@ -1,58 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import SentenceCard from "../sentence-card";
-
-type Sentence = {
-	id: number;
-	content: string;
-};
-
-type RandomResponse =
-	| {
-			sentences: Sentence[];
-			limit: number;
-			count: number;
-	  }
-	| { error: string };
+import { useRandomSentences } from "./use-random-sentences";
 
 export default function RandomList() {
-	const [sentences, setSentences] = useState<Sentence[]>([]);
-	const [isLoading, setIsLoading] = useState(true);
-	const [isRefreshing, setIsRefreshing] = useState(false);
-	const [error, setError] = useState("");
-	const [limit, setLimit] = useState(200);
-
-	const fetchSentences = async (showRefreshing: boolean) => {
-		if (showRefreshing) {
-			setIsRefreshing(true);
-		} else {
-			setIsLoading(true);
-		}
-		setError("");
-
-		try {
-			const response = await fetch("/api/random");
-			const data = (await response.json()) as RandomResponse;
-
-			if (!response.ok || "error" in data) {
-				setError("error" in data ? data.error : "取得に失敗しました。");
-				return;
-			}
-
-			setSentences(data.sentences);
-			setLimit(data.limit);
-		} catch {
-			setError("通信エラーが発生しました。");
-		} finally {
-			setIsLoading(false);
-			setIsRefreshing(false);
-		}
-	};
-
-	useEffect(() => {
-		void fetchSentences(false);
-	}, []);
+	const { sentences, limit, isLoading, isRefreshing, error, shuffle } =
+		useRandomSentences();
 
 	return (
 		<section>
@@ -62,7 +15,7 @@ export default function RandomList() {
 				</p>
 				<button
 					type="button"
-					onClick={() => void fetchSentences(true)}
+					onClick={shuffle}
 					disabled={isLoading || isRefreshing}
 				>
 					{isRefreshing ? "再取得中..." : "シャッフル"}
