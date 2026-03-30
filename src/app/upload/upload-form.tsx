@@ -1,85 +1,32 @@
 "use client";
 
-import { type FormEvent, useState } from "react";
+import { type SubmitEventHandler } from "react";
+import { useUploadActions } from "./use-upload-actions";
 
 export default function UploadForm() {
-	const [result, setResult] = useState("");
-	const [isUploading, setIsUploading] = useState(false);
-	const [isDeleting, setIsDeleting] = useState(false);
-	const [error, setError] = useState("");
+	const {
+		result,
+		error,
+		isUploading,
+		isDeleting,
+		isBusy,
+		uploadFromForm,
+		deleteAllRecords,
+	} = useUploadActions();
 
-	const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+	const handleSubmit: SubmitEventHandler<HTMLFormElement> = (event) => {
 		event.preventDefault();
-		setError("");
-		setResult("");
-
-		const formData = new FormData(event.currentTarget);
-		const file = formData.get("file");
-
-		if (!(file instanceof File) || file.size === 0) {
-			setError("txtファイルを1つ選択してください。");
-			return;
-		}
-
-		setIsUploading(true);
-
-		try {
-			const response = await fetch("/api/upload", {
-				method: "POST",
-				body: formData,
-			});
-
-			const data = (await response.json()) as
-				| { count: number }
-				| { error: string };
-
-			if (!response.ok || "error" in data) {
-				setError("error" in data ? data.error : "アップロードに失敗しました。");
-				return;
-			}
-
-			setResult(`${data.count}件のレコードを保存しました。`);
-		} catch {
-			setError("通信エラーが発生しました。");
-		} finally {
-			setIsUploading(false);
-		}
+		uploadFromForm(event.currentTarget);
 	};
 
-	const handleDeleteAll = async () => {
-		setError("");
-		setResult("");
-
+	const handleDeleteAll = () => {
 		const shouldDelete = window.confirm("本当に削除しますか？");
 		if (!shouldDelete) {
 			return;
 		}
 
-		setIsDeleting(true);
-
-		try {
-			const response = await fetch("/api/upload", {
-				method: "DELETE",
-			});
-
-			const data = (await response.json()) as
-				| { count: number }
-				| { error: string };
-
-			if (!response.ok || "error" in data) {
-				setError("error" in data ? data.error : "削除に失敗しました。");
-				return;
-			}
-
-			setResult(`${data.count}件のレコードを削除しました。`);
-		} catch {
-			setError("通信エラーが発生しました。");
-		} finally {
-			setIsDeleting(false);
-		}
+		deleteAllRecords();
 	};
-
-	const isBusy = isUploading || isDeleting;
 
 	return (
 		<>
