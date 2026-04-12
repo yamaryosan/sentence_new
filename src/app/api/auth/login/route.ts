@@ -10,6 +10,9 @@ import {
 	isValidPassword,
 	recordFailedAttempt,
 } from "@/lib/auth";
+import { LoginRequestSchema } from "@/lib/api-schemas/auth";
+import { jsonApiError } from "@/lib/api-response";
+import { readJsonObject } from "@/lib/request-json";
 
 export async function POST(request: NextRequest) {
 	try {
@@ -17,22 +20,21 @@ export async function POST(request: NextRequest) {
 		const lockStatus = await getLockStatus(clientKey);
 
 		if (lockStatus.isLocked) {
-			return NextResponse.json(
-				{
-					error: `ログインは一時的にロックされています。${formatRemainingLockTime(lockStatus.remainingMs)}`,
-				},
-				{ status: 429 },
+			return jsonApiError(
+				`ログインは一時的にロックされています。${formatRemainingLockTime(lockStatus.remainingMs)}`,
+				429,
 			);
 		}
 
-		const { password } = (await request.json()) as { password?: string };
-
-		if (typeof password !== "string" || password.length === 0) {
-			return NextResponse.json(
-				{ error: "パスワードを入力してください。" },
-				{ status: 400 },
-			);
+		const body = await readJsonObject(request);
+		if (body === null) {
+			return jsonApiError("リクエスト形式が不正です。", 400);
 		}
+		const parsedBody = LoginRequestSchema.safeParse(body);
+		if (!parsedBody.success) {
+			return jsonApiError("パスワードを入力してください。", 400);
+		}
+		const { password } = parsedBody.data;
 
 		if (!isValidPassword(password)) {
 			const result = await recordFailedAttempt(clientKey);
@@ -40,7 +42,7 @@ export async function POST(request: NextRequest) {
 				? `ログインは一時的にロックされています。${formatRemainingLockTime(result.remainingMs)}`
 				: "パスワードが違います。";
 
-			return NextResponse.json({ error: errorMessage }, { status: 401 });
+			return jsonApiError(errorMessage, 401);
 		}
 
 		await clearFailedAttempts(clientKey);
@@ -72,16 +74,13 @@ export async function POST(request: NextRequest) {
 					"UPSTASH_REDIS_REST_TOKEN is not configured",
 				)
 			) {
-				return NextResponse.json(
-					{ error: error.message },
-					{ status: 500 },
-				);
+				return jsonApiError(error.message, 500);
 			}
 		}
 
-		return NextResponse.json(
-			{ error: "認証設定が不足しています。環境変数を確認してください。" },
-			{ status: 500 },
+		return jsonApiError(
+			"認証設定が不足しています。環境変数を確認してください。",
+			500,
 		);
 	}
 }

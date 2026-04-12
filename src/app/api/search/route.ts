@@ -1,31 +1,27 @@
 import { Prisma } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
+import {
+	SearchQuerySchema,
+	SearchSentencesResponseSchema,
+} from "@/lib/api-schemas/search";
+import { jsonApiError } from "@/lib/api-response";
 import { prisma } from "@/lib/prisma";
 
-const MAX_QUERY_LENGTH = 40;
-
 export async function GET(request: NextRequest) {
-	const rawQuery = request.nextUrl.searchParams.get("q") ?? "";
-	const query = rawQuery.trim();
-	const sort = request.nextUrl.searchParams.get("sort");
-	const isUnsafeSearchModeEnabled =
-		request.nextUrl.searchParams.get("unsafeMode") === "true";
-
-	if (query.length === 0) {
-		return NextResponse.json(
-			{ error: "検索キーワードを入力してください。" },
-			{ status: 400 },
+	const parsedQuery = SearchQuerySchema.safeParse({
+		q: (request.nextUrl.searchParams.get("q") ?? "").trim(),
+		sort: request.nextUrl.searchParams.get("sort") ?? undefined,
+		unsafeMode: request.nextUrl.searchParams.get("unsafeMode") ?? undefined,
+	});
+	if (!parsedQuery.success) {
+		return jsonApiError(
+			parsedQuery.error.issues[0]?.message ??
+				"リクエスト形式が不正です。",
+			400,
 		);
 	}
-
-	if (query.length > MAX_QUERY_LENGTH) {
-		return NextResponse.json(
-			{
-				error: `検索キーワードは${MAX_QUERY_LENGTH}文字以内で入力してください。`,
-			},
-			{ status: 400 },
-		);
-	}
+	const { q: query, sort, unsafeMode } = parsedQuery.data;
+	const isUnsafeSearchModeEnabled = unsafeMode === "true";
 
 	try {
 		const unsafeTerms = await prisma.unsafeTerm.findMany({
@@ -56,23 +52,20 @@ export async function GET(request: NextRequest) {
 					: [{ id: "asc" }],
 		});
 
-		return NextResponse.json({ sentences });
+		return NextResponse.json(
+			SearchSentencesResponseSchema.parse({ sentences }),
+		);
 	} catch (error) {
 		if (
 			error instanceof Prisma.PrismaClientKnownRequestError &&
 			error.code === "P2021"
 		) {
-			return NextResponse.json(
-				{
-					error: "必要なテーブルが存在しません。`npm run prisma:migrate` を実行してください。",
-				},
-				{ status: 500 },
+			return jsonApiError(
+				"必要なテーブルが存在しません。`npm run prisma:migrate` を実行してください。",
+				500,
 			);
 		}
 
-		return NextResponse.json(
-			{ error: "データ取得中にエラーが発生しました。" },
-			{ status: 500 },
-		);
+		return jsonApiError("データ取得中にエラーが発生しました。", 500);
 	}
 }

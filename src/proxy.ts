@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { AUTH_COOKIE_NAME, verifySessionToken } from "@/lib/auth";
+import { isOpenApiPublicEnabled } from "@/lib/openapi-access";
 
 const PUBLIC_PATHS = new Set(["/", "/login"]);
 const PUBLIC_PREFIXES = ["/_next", "/api/auth/login", "/api/auth/logout"];
@@ -11,6 +12,13 @@ function isPublicPath(pathname: string) {
 	}
 
 	if (pathname === "/favicon.ico") {
+		return true;
+	}
+
+	if (
+		isOpenApiPublicEnabled() &&
+		(pathname === "/docs" || pathname.startsWith("/api/openapi"))
+	) {
 		return true;
 	}
 
