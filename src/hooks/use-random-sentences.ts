@@ -17,6 +17,8 @@ type RandomResponse = RandomSuccessResponse | { error: string };
 
 const RANDOM_SENTENCES_QUERY_KEY = ["random-sentences"] as const;
 const FALLBACK_LIMIT = 200;
+const RANDOM_SENTENCES_STALE_TIME_MS = 1000 * 60 * 5;
+const RANDOM_SENTENCES_GC_TIME_MS = 1000 * 60 * 30;
 
 async function fetchRandomSentences(): Promise<RandomSuccessResponse> {
 	const response = await fetch("/api/random");
@@ -33,6 +35,11 @@ export function useRandomSentences() {
 	const query = useQuery<RandomSuccessResponse, Error>({
 		queryKey: RANDOM_SENTENCES_QUERY_KEY,
 		queryFn: fetchRandomSentences,
+		staleTime: RANDOM_SENTENCES_STALE_TIME_MS,
+		gcTime: RANDOM_SENTENCES_GC_TIME_MS,
+		refetchOnMount: false,
+		refetchOnWindowFocus: false,
+		refetchOnReconnect: false,
 	});
 
 	return {
