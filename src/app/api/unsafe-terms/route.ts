@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { readJsonObject } from "@/lib/request-json";
 
 const MAX_TERM_LENGTH = 100;
 
@@ -47,7 +48,14 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-	const body = (await request.json()) as { term?: unknown };
+	const body = await readJsonObject(request);
+	if (body === null) {
+		return NextResponse.json(
+			{ error: "リクエスト形式が不正です。" },
+			{ status: 400 },
+		);
+	}
+
 	const term = typeof body.term === "string" ? body.term.trim() : "";
 
 	if (term.length === 0) {

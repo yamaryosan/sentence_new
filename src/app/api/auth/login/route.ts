@@ -10,6 +10,8 @@ import {
 	isValidPassword,
 	recordFailedAttempt,
 } from "@/lib/auth";
+import { LoginRequestSchema } from "@/lib/api-schemas/auth";
+import { readJsonObject } from "@/lib/request-json";
 
 export async function POST(request: NextRequest) {
 	try {
@@ -25,14 +27,21 @@ export async function POST(request: NextRequest) {
 			);
 		}
 
-		const { password } = (await request.json()) as { password?: string };
-
-		if (typeof password !== "string" || password.length === 0) {
+		const body = await readJsonObject(request);
+		if (body === null) {
+			return NextResponse.json(
+				{ error: "リクエスト形式が不正です。" },
+				{ status: 400 },
+			);
+		}
+		const parsedBody = LoginRequestSchema.safeParse(body);
+		if (!parsedBody.success) {
 			return NextResponse.json(
 				{ error: "パスワードを入力してください。" },
 				{ status: 400 },
 			);
 		}
+		const { password } = parsedBody.data;
 
 		if (!isValidPassword(password)) {
 			const result = await recordFailedAttempt(clientKey);
