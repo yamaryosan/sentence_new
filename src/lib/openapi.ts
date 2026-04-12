@@ -1,4 +1,7 @@
-import { OpenAPIRegistry, OpenApiGeneratorV3 } from "@asteasolutions/zod-to-openapi";
+import {
+	OpenAPIRegistry,
+	OpenApiGeneratorV3,
+} from "@asteasolutions/zod-to-openapi";
 import {
 	LoginRequestSchema,
 	LoginSuccessResponseSchema,
