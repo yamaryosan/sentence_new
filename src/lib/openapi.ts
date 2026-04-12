@@ -88,6 +88,28 @@ registry.registerPath({
 });
 
 registry.registerPath({
+	method: "post",
+	path: "/api/auth/logout",
+	summary: "ログアウト",
+	description: "セッションを破棄し、ログインページへリダイレクトします。",
+	tags: ["auth"],
+	responses: {
+		302: {
+			description: "ログアウト完了",
+			headers: {
+				Location: {
+					description: "リダイレクト先",
+					schema: {
+						type: "string",
+						example: "/login",
+					},
+				},
+			},
+		},
+	},
+});
+
+registry.registerPath({
 	method: "get",
 	path: "/api/unsafe-terms",
 	summary: "アンセーフ用語一覧取得",
