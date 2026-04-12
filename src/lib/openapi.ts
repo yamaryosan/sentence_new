@@ -9,6 +9,10 @@ import {
 import { ApiErrorResponseSchema } from "@/lib/api-schemas/common";
 import { RandomSentencesResponseSchema } from "@/lib/api-schemas/random";
 import {
+	SearchQuerySchema,
+	SearchSentencesResponseSchema,
+} from "@/lib/api-schemas/search";
+import {
 	ViewQuerySchema,
 	ViewSentencesResponseSchema,
 } from "@/lib/api-schemas/view";
@@ -90,6 +94,43 @@ registry.registerPath({
 			content: {
 				"application/json": {
 					schema: ViewSentencesResponseSchema,
+				},
+			},
+		},
+		500: {
+			description: "サーバーエラー",
+			content: {
+				"application/json": {
+					schema: ApiErrorResponseSchema,
+				},
+			},
+		},
+	},
+});
+
+registry.registerPath({
+	method: "get",
+	path: "/api/search",
+	summary: "文検索",
+	description: "キーワードで文を検索します。",
+	tags: ["sentences"],
+	request: {
+		query: SearchQuerySchema,
+	},
+	responses: {
+		200: {
+			description: "取得成功",
+			content: {
+				"application/json": {
+					schema: SearchSentencesResponseSchema,
+				},
+			},
+		},
+		400: {
+			description: "入力不正",
+			content: {
+				"application/json": {
+					schema: ApiErrorResponseSchema,
 				},
 			},
 		},
