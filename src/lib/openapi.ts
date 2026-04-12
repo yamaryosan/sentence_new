@@ -13,6 +13,14 @@ import {
 	SearchSentencesResponseSchema,
 } from "@/lib/api-schemas/search";
 import {
+	CreateUnsafeTermRequestSchema,
+	CreateUnsafeTermResponseSchema,
+	DeleteUnsafeTermQuerySchema,
+	DeleteUnsafeTermResponseSchema,
+	UnsafeTermsListResponseSchema,
+} from "@/lib/api-schemas/unsafe-terms";
+import { UploadCountResponseSchema } from "@/lib/api-schemas/upload";
+import {
 	ViewQuerySchema,
 	ViewSentencesResponseSchema,
 } from "@/lib/api-schemas/view";
@@ -65,6 +73,209 @@ registry.registerPath({
 			content: {
 				"application/json": {
 					schema: ApiErrorResponseSchema,
+				},
+			},
+		},
+		500: {
+			description: "サーバーエラー",
+			content: {
+				"application/json": {
+					schema: ApiErrorResponseSchema,
+				},
+			},
+		},
+	},
+});
+
+registry.registerPath({
+	method: "get",
+	path: "/api/unsafe-terms",
+	summary: "アンセーフ用語一覧取得",
+	description: "登録済みのアンセーフ用語一覧を取得します。",
+	tags: ["unsafe-terms"],
+	responses: {
+		200: {
+			description: "取得成功",
+			content: {
+				"application/json": {
+					schema: UnsafeTermsListResponseSchema,
+				},
+			},
+		},
+		500: {
+			description: "サーバーエラー",
+			content: {
+				"application/json": {
+					schema: ApiErrorResponseSchema,
+				},
+			},
+		},
+	},
+});
+
+registry.registerPath({
+	method: "post",
+	path: "/api/unsafe-terms",
+	summary: "アンセーフ用語追加",
+	description: "アンセーフ用語を1件追加します。",
+	tags: ["unsafe-terms"],
+	request: {
+		body: {
+			required: true,
+			content: {
+				"application/json": {
+					schema: CreateUnsafeTermRequestSchema,
+				},
+			},
+		},
+	},
+	responses: {
+		201: {
+			description: "追加成功",
+			content: {
+				"application/json": {
+					schema: CreateUnsafeTermResponseSchema,
+				},
+			},
+		},
+		400: {
+			description: "入力不正",
+			content: {
+				"application/json": {
+					schema: ApiErrorResponseSchema,
+				},
+			},
+		},
+		409: {
+			description: "重複エラー",
+			content: {
+				"application/json": {
+					schema: ApiErrorResponseSchema,
+				},
+			},
+		},
+		500: {
+			description: "サーバーエラー",
+			content: {
+				"application/json": {
+					schema: ApiErrorResponseSchema,
+				},
+			},
+		},
+	},
+});
+
+registry.registerPath({
+	method: "delete",
+	path: "/api/unsafe-terms",
+	summary: "アンセーフ用語削除",
+	description: "指定したIDのアンセーフ用語を削除します。",
+	tags: ["unsafe-terms"],
+	request: {
+		query: DeleteUnsafeTermQuerySchema,
+	},
+	responses: {
+		200: {
+			description: "削除成功",
+			content: {
+				"application/json": {
+					schema: DeleteUnsafeTermResponseSchema,
+				},
+			},
+		},
+		400: {
+			description: "入力不正",
+			content: {
+				"application/json": {
+					schema: ApiErrorResponseSchema,
+				},
+			},
+		},
+		404: {
+			description: "対象なし",
+			content: {
+				"application/json": {
+					schema: ApiErrorResponseSchema,
+				},
+			},
+		},
+		500: {
+			description: "サーバーエラー",
+			content: {
+				"application/json": {
+					schema: ApiErrorResponseSchema,
+				},
+			},
+		},
+	},
+});
+
+registry.registerPath({
+	method: "post",
+	path: "/api/upload",
+	summary: "文章アップロード",
+	description: ".txtファイルをアップロードして文章を保存します。",
+	tags: ["sentences"],
+	request: {
+		body: {
+			required: true,
+			content: {
+				"multipart/form-data": {
+					schema: {
+						type: "object",
+						required: ["file"],
+						properties: {
+							file: {
+								type: "string",
+								format: "binary",
+								description: "アップロードするtxtファイル",
+							},
+						},
+					},
+				},
+			},
+		},
+	},
+	responses: {
+		200: {
+			description: "保存成功",
+			content: {
+				"application/json": {
+					schema: UploadCountResponseSchema,
+				},
+			},
+		},
+		400: {
+			description: "入力不正",
+			content: {
+				"application/json": {
+					schema: ApiErrorResponseSchema,
+				},
+			},
+		},
+		500: {
+			description: "サーバーエラー",
+			content: {
+				"application/json": {
+					schema: ApiErrorResponseSchema,
+				},
+			},
+		},
+	},
+});
+
+registry.registerPath({
+	method: "delete",
+	path: "/api/upload",
+	summary: "文章全削除",
+	description: "保存済みの文章をすべて削除します。",
+	tags: ["sentences"],
+	responses: {
+		200: {
+			description: "削除成功",
+			content: {
+				"application/json": {
+					schema: UploadCountResponseSchema,
 				},
 			},
 		},

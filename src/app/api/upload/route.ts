@@ -1,5 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
+import { UploadCountResponseSchema } from "@/lib/api-schemas/upload";
+import { jsonApiError } from "@/lib/api-response";
 import { prisma } from "@/lib/prisma";
 
 const MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024;
@@ -51,30 +53,22 @@ export async function POST(request: Request) {
 	const file = formData.get("file");
 
 	if (!(file instanceof File)) {
-		return NextResponse.json(
-			{ error: "ファイルが見つかりません。" },
-			{ status: 400 },
-		);
+		return jsonApiError("ファイルが見つかりません。", 400);
 	}
 
 	const isTxtFile =
 		file.type === "text/plain" || file.name.toLowerCase().endsWith(".txt");
 
 	if (!isTxtFile) {
-		return NextResponse.json(
-			{ error: ".txtファイルのみアップロードできます。" },
-			{ status: 400 },
-		);
+		return jsonApiError(".txtファイルのみアップロードできます。", 400);
 	}
 
 	if (file.size > MAX_FILE_SIZE_BYTES) {
-		return NextResponse.json(
-			{
-				error: `ファイルサイズは${Math.floor(
-					MAX_FILE_SIZE_BYTES / (1024 * 1024),
-				)}MB以下にしてください。`,
-			},
-			{ status: 400 },
+		return jsonApiError(
+			`ファイルサイズは${Math.floor(
+				MAX_FILE_SIZE_BYTES / (1024 * 1024),
+			)}MB以下にしてください。`,
+			400,
 		);
 	}
 
@@ -102,53 +96,47 @@ export async function POST(request: Request) {
 		}
 
 		if (!hasContent) {
-			return NextResponse.json(
-				{ error: "保存対象のテキストが見つかりませんでした。" },
-				{ status: 400 },
+			return jsonApiError(
+				"保存対象のテキストが見つかりませんでした。",
+				400,
 			);
 		}
 
-		return NextResponse.json({ count: totalCount });
+		return NextResponse.json(
+			UploadCountResponseSchema.parse({ count: totalCount }),
+		);
 	} catch (error) {
 		if (
 			error instanceof Prisma.PrismaClientKnownRequestError &&
 			error.code === "P2021"
 		) {
-			return NextResponse.json(
-				{
-					error: "Sentenceテーブルが存在しません。`npm run prisma:migrate` を実行してください。",
-				},
-				{ status: 500 },
+			return jsonApiError(
+				"Sentenceテーブルが存在しません。`npm run prisma:migrate` を実行してください。",
+				500,
 			);
 		}
 
-		return NextResponse.json(
-			{ error: "データ保存中にエラーが発生しました。" },
-			{ status: 500 },
-		);
+		return jsonApiError("データ保存中にエラーが発生しました。", 500);
 	}
 }
 
 export async function DELETE() {
 	try {
 		const result = await prisma.sentence.deleteMany();
-		return NextResponse.json({ count: result.count });
+		return NextResponse.json(
+			UploadCountResponseSchema.parse({ count: result.count }),
+		);
 	} catch (error) {
 		if (
 			error instanceof Prisma.PrismaClientKnownRequestError &&
 			error.code === "P2021"
 		) {
-			return NextResponse.json(
-				{
-					error: "Sentenceテーブルが存在しません。`npm run prisma:migrate` を実行してください。",
-				},
-				{ status: 500 },
+			return jsonApiError(
+				"Sentenceテーブルが存在しません。`npm run prisma:migrate` を実行してください。",
+				500,
 			);
 		}
 
-		return NextResponse.json(
-			{ error: "データ削除中にエラーが発生しました。" },
-			{ status: 500 },
-		);
+		return jsonApiError("データ削除中にエラーが発生しました。", 500);
 	}
 }
