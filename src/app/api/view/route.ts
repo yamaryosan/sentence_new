@@ -1,5 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
+import { jsonApiError } from "@/lib/api-response";
+import { ViewSentencesResponseSchema } from "@/lib/api-schemas/view";
 import { prisma } from "@/lib/prisma";
 
 const PAGE_SIZE = 200;
@@ -24,30 +26,25 @@ export async function GET(request: NextRequest) {
 			take: PAGE_SIZE,
 		});
 
-		return NextResponse.json({
+		const responseBody = ViewSentencesResponseSchema.parse({
 			sentences,
 			page: currentPage,
 			pageSize: PAGE_SIZE,
 			totalCount,
 			totalPages,
 		});
+		return NextResponse.json(responseBody);
 	} catch (error) {
 		if (
 			error instanceof Prisma.PrismaClientKnownRequestError &&
 			error.code === "P2021"
 		) {
-			return NextResponse.json(
-				{
-					error:
-						"Sentenceテーブルが存在しません。`npm run prisma:migrate` を実行してください。",
-				},
-				{ status: 500 },
+			return jsonApiError(
+				"Sentenceテーブルが存在しません。`npm run prisma:migrate` を実行してください。",
+				500,
 			);
 		}
 
-		return NextResponse.json(
-			{ error: "データ取得中にエラーが発生しました。" },
-			{ status: 500 },
-		);
+		return jsonApiError("データ取得中にエラーが発生しました。", 500);
 	}
 }

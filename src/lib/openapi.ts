@@ -8,6 +8,10 @@ import {
 } from "@/lib/api-schemas/auth";
 import { ApiErrorResponseSchema } from "@/lib/api-schemas/common";
 import { RandomSentencesResponseSchema } from "@/lib/api-schemas/random";
+import {
+	ViewQuerySchema,
+	ViewSentencesResponseSchema,
+} from "@/lib/api-schemas/view";
 
 const registry = new OpenAPIRegistry();
 
@@ -57,6 +61,35 @@ registry.registerPath({
 			content: {
 				"application/json": {
 					schema: ApiErrorResponseSchema,
+				},
+			},
+		},
+		500: {
+			description: "サーバーエラー",
+			content: {
+				"application/json": {
+					schema: ApiErrorResponseSchema,
+				},
+			},
+		},
+	},
+});
+
+registry.registerPath({
+	method: "get",
+	path: "/api/view",
+	summary: "文一覧取得",
+	description: "保存済みの文をページネーション付きで取得します。",
+	tags: ["sentences"],
+	request: {
+		query: ViewQuerySchema,
+	},
+	responses: {
+		200: {
+			description: "取得成功",
+			content: {
+				"application/json": {
+					schema: ViewSentencesResponseSchema,
 				},
 			},
 		},
