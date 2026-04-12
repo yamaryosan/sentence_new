@@ -38,7 +38,6 @@ export async function GET() {
 				500,
 			);
 		}
-
 		return jsonApiError("ランダム取得中にエラーが発生しました。", 500);
 	}
 }
