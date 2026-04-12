@@ -1,9 +1,10 @@
 import { OpenAPIRegistry, OpenApiGeneratorV3 } from "@asteasolutions/zod-to-openapi";
 import {
-	ApiErrorResponseSchema,
 	LoginRequestSchema,
 	LoginSuccessResponseSchema,
 } from "@/lib/api-schemas/auth";
+import { ApiErrorResponseSchema } from "@/lib/api-schemas/common";
+import { RandomSentencesResponseSchema } from "@/lib/api-schemas/random";
 
 const registry = new OpenAPIRegistry();
 
@@ -53,6 +54,32 @@ registry.registerPath({
 			content: {
 				"application/json": {
 					schema: ApiErrorResponseSchema,
+				},
+			},
+		},
+		500: {
+			description: "サーバーエラー",
+			content: {
+				"application/json": {
+					schema: ApiErrorResponseSchema,
+				},
+			},
+		},
+	},
+});
+
+registry.registerPath({
+	method: "get",
+	path: "/api/random",
+	summary: "ランダム文取得",
+	description: "保存済みの文を最大200件ランダムな範囲から取得します。",
+	tags: ["sentences"],
+	responses: {
+		200: {
+			description: "取得成功",
+			content: {
+				"application/json": {
+					schema: RandomSentencesResponseSchema,
 				},
 			},
 		},

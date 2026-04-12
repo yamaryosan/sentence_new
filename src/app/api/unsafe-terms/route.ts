@@ -1,5 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
+import { jsonApiError } from "@/lib/api-response";
 import { prisma } from "@/lib/prisma";
 import { readJsonObject } from "@/lib/request-json";
 
@@ -11,26 +12,22 @@ function buildUnsafeTermsErrorResponse(
 ) {
 	if (error instanceof Prisma.PrismaClientKnownRequestError) {
 		if (error.code === "P2021" || error.code === "P2022") {
-			return NextResponse.json(
-				{
-					error: "UnsafeTermテーブル定義が最新ではありません。`npm run prisma:migrate` を実行してください。",
-				},
-				{ status: 500 },
+			return jsonApiError(
+				"UnsafeTermテーブル定義が最新ではありません。`npm run prisma:migrate` を実行してください。",
+				500,
 			);
 		}
 	}
 
 	if (error instanceof Prisma.PrismaClientInitializationError) {
-		return NextResponse.json(
-			{
-				error: "データベース接続に失敗しました。DATABASE_URL とDB状態を確認してください。",
-			},
-			{ status: 500 },
+		return jsonApiError(
+			"データベース接続に失敗しました。DATABASE_URL とDB状態を確認してください。",
+			500,
 		);
 	}
 
 	console.error("[unsafe-terms] API error:", error);
-	return NextResponse.json({ error: fallbackMessage }, { status: 500 });
+	return jsonApiError(fallbackMessage, 500);
 }
 
 export async function GET() {
@@ -50,27 +47,19 @@ export async function GET() {
 export async function POST(request: NextRequest) {
 	const body = await readJsonObject(request);
 	if (body === null) {
-		return NextResponse.json(
-			{ error: "リクエスト形式が不正です。" },
-			{ status: 400 },
-		);
+		return jsonApiError("リクエスト形式が不正です。", 400);
 	}
 
 	const term = typeof body.term === "string" ? body.term.trim() : "";
 
 	if (term.length === 0) {
-		return NextResponse.json(
-			{ error: "用語を入力してください。" },
-			{ status: 400 },
-		);
+		return jsonApiError("用語を入力してください。", 400);
 	}
 
 	if (term.length > MAX_TERM_LENGTH) {
-		return NextResponse.json(
-			{
-				error: `用語は${MAX_TERM_LENGTH}文字以内で入力してください。`,
-			},
-			{ status: 400 },
+		return jsonApiError(
+			`用語は${MAX_TERM_LENGTH}文字以内で入力してください。`,
+			400,
 		);
 	}
 
@@ -82,10 +71,7 @@ export async function POST(request: NextRequest) {
 	} catch (error) {
 		if (error instanceof Prisma.PrismaClientKnownRequestError) {
 			if (error.code === "P2002") {
-				return NextResponse.json(
-					{ error: "同じ用語はすでに登録されています。" },
-					{ status: 409 },
-				);
+				return jsonApiError("同じ用語はすでに登録されています。", 409);
 			}
 		}
 
@@ -101,10 +87,7 @@ export async function DELETE(request: NextRequest) {
 	const id = Number(idParam);
 
 	if (!Number.isInteger(id) || id <= 0) {
-		return NextResponse.json(
-			{ error: "削除対象のidが不正です。" },
-			{ status: 400 },
-		);
+		return jsonApiError("削除対象のidが不正です。", 400);
 	}
 
 	try {
@@ -115,10 +98,7 @@ export async function DELETE(request: NextRequest) {
 	} catch (error) {
 		if (error instanceof Prisma.PrismaClientKnownRequestError) {
 			if (error.code === "P2025") {
-				return NextResponse.json(
-					{ error: "指定した用語が見つかりません。" },
-					{ status: 404 },
-				);
+				return jsonApiError("指定した用語が見つかりません。", 404);
 			}
 		}
 

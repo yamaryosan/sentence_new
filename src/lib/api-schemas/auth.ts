@@ -17,12 +17,3 @@ export const LoginSuccessResponseSchema = z
 		id: "LoginSuccessResponse",
 		description: "ログイン成功レスポンス",
 	});
-
-export const ApiErrorResponseSchema = z
-	.object({
-		error: z.string(),
-	})
-	.meta({
-		id: "ApiErrorResponse",
-		description: "APIエラーレスポンス",
-	});
