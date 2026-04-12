@@ -25,6 +25,20 @@ export async function GET() {
 			count: sentences.length,
 		});
 	} catch (error) {
+		const prismaErrorCode =
+			error &&
+			typeof error === "object" &&
+			"code" in error &&
+			typeof (error as { code?: unknown }).code === "string"
+				? (error as { code: string }).code
+				: undefined;
+
+		console.error("[api/random] failed to fetch sentences", {
+			name: error instanceof Error ? error.name : typeof error,
+			message: error instanceof Error ? error.message : String(error),
+			code: prismaErrorCode,
+		});
+
 		if (
 			error instanceof Prisma.PrismaClientKnownRequestError &&
 			error.code === "P2021"
@@ -32,6 +46,20 @@ export async function GET() {
 			return NextResponse.json(
 				{
 					error: "Sentenceテーブルが存在しません。`npm run prisma:migrate` を実行してください。",
+				},
+				{ status: 500 },
+			);
+		}
+
+		if (
+			error instanceof Prisma.PrismaClientInitializationError ||
+			(error instanceof Prisma.PrismaClientKnownRequestError &&
+				error.code === "P1001")
+		) {
+			return NextResponse.json(
+				{
+					error:
+						"データベース接続に失敗しました。TiDBのIP許可リストとDATABASE_URLを確認してください。",
 				},
 				{ status: 500 },
 			);
