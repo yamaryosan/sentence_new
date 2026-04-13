@@ -11,6 +11,18 @@ import { jsonApiError } from "@/lib/api-response";
 import { prisma } from "@/lib/prisma";
 import { readJsonObject } from "@/lib/request-json";
 
+function serializeUnsafeTerm(term: {
+	id: number;
+	term: string;
+	createdAt: Date;
+}) {
+	return {
+		id: term.id,
+		term: term.term,
+		createdAt: term.createdAt.toISOString(),
+	};
+}
+
 function buildUnsafeTermsErrorResponse(
 	error: unknown,
 	fallbackMessage: string,
@@ -40,8 +52,9 @@ export async function GET() {
 		const terms = await prisma.unsafeTerm.findMany({
 			orderBy: [{ createdAt: "desc" }, { id: "desc" }],
 		});
+		const serializedTerms = terms.map(serializeUnsafeTerm);
 		return NextResponse.json(
-			UnsafeTermsListResponseSchema.parse({ terms }),
+			UnsafeTermsListResponseSchema.parse({ terms: serializedTerms }),
 		);
 	} catch (error) {
 		return buildUnsafeTermsErrorResponse(
@@ -72,8 +85,9 @@ export async function POST(request: NextRequest) {
 		const created = await prisma.unsafeTerm.create({
 			data: { term },
 		});
+		const serializedCreated = serializeUnsafeTerm(created);
 		return NextResponse.json(
-			CreateUnsafeTermResponseSchema.parse({ term: created }),
+			CreateUnsafeTermResponseSchema.parse({ term: serializedCreated }),
 			{ status: 201 },
 		);
 	} catch (error) {
