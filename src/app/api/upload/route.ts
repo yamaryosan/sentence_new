@@ -49,30 +49,61 @@ async function* parseParagraphs(file: File): AsyncGenerator<string> {
 }
 
 export async function POST(request: Request) {
-	const formData = await request.formData();
-	const file = formData.get("file");
-
-	if (!(file instanceof File)) {
-		return jsonApiError("ファイルが見つかりません。", 400);
-	}
-
-	const isTxtFile =
-		file.type === "text/plain" || file.name.toLowerCase().endsWith(".txt");
-
-	if (!isTxtFile) {
-		return jsonApiError(".txtファイルのみアップロードできます。", 400);
-	}
-
-	if (file.size > MAX_FILE_SIZE_BYTES) {
+	const contentType = request.headers.get("content-type") ?? "";
+	if (!contentType.toLowerCase().startsWith("multipart/form-data")) {
 		return jsonApiError(
-			`ファイルサイズは${Math.floor(
+			"アップロード形式が不正です。multipart/form-data で送信してください。",
+			400,
+		);
+	}
+
+	const contentLengthHeader = request.headers.get("content-length");
+	const contentLength = contentLengthHeader
+		? Number.parseInt(contentLengthHeader, 10)
+		: Number.NaN;
+
+	if (Number.isFinite(contentLength) && contentLength > MAX_FILE_SIZE_BYTES) {
+		return jsonApiError(
+			`アップロードサイズが上限を超えています（最大${Math.floor(
 				MAX_FILE_SIZE_BYTES / (1024 * 1024),
-			)}MB以下にしてください。`,
+			)}MB）。`,
+			413,
+		);
+	}
+
+	let formData: FormData;
+	try {
+		formData = await request.formData();
+	} catch {
+		return jsonApiError(
+			"アップロードデータ（multipart/form-data）の解析に失敗しました。",
 			400,
 		);
 	}
 
 	try {
+		const file = formData.get("file");
+
+		if (!(file instanceof File)) {
+			return jsonApiError("ファイルが見つかりません。", 400);
+		}
+
+		const isTxtFile =
+			file.type === "text/plain" || file.name.toLowerCase().endsWith(".txt");
+
+		if (!isTxtFile) {
+			return jsonApiError(".txtファイルのみアップロードできます。", 400);
+		}
+
+		if (file.size > MAX_FILE_SIZE_BYTES) {
+			return jsonApiError(
+				`ファイルサイズは${Math.floor(
+					MAX_FILE_SIZE_BYTES / (1024 * 1024),
+				)}MB以下にしてください。`,
+				400,
+			);
+		}
+
 		let totalCount = 0;
 		let hasContent = false;
 		let batch: { content: string }[] = [];

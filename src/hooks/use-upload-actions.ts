@@ -2,15 +2,51 @@
 
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
+import { ApiErrorResponseSchema } from "@/lib/api-schemas/common";
+import { UploadCountResponseSchema } from "@/lib/api-schemas/upload";
 
 type UploadResponse = { count: number } | { error: string };
+
+async function readUploadResponse(response: Response): Promise<UploadResponse> {
+	const bodyText = await response.text();
+	if (bodyText.length === 0) {
+		throw new Error(
+			"サーバーから空のレスポンスが返されました。時間をおいて再試行してください。",
+		);
+	}
+
+	try {
+		const parsed: unknown = JSON.parse(bodyText);
+		const success = UploadCountResponseSchema.safeParse(parsed);
+		if (success.success) {
+			return success.data;
+		}
+
+		const failure = ApiErrorResponseSchema.safeParse(parsed);
+		if (failure.success) {
+			return failure.data;
+		}
+
+		throw new Error("サーバー応答の形式が不正です。");
+	} catch (error) {
+		if (error instanceof SyntaxError) {
+			throw new Error("サーバー応答の解析に失敗しました。");
+		}
+
+		if (error instanceof Error) {
+			throw error;
+		}
+
+		throw new Error("サーバー応答の解析に失敗しました。");
+	}
+}
 
 async function uploadSentences(formData: FormData): Promise<number> {
 	const response = await fetch("/api/upload", {
 		method: "POST",
 		body: formData,
 	});
-	const data = (await response.json()) as UploadResponse;
+	const data = await readUploadResponse(response);
 
 	if (!response.ok || "error" in data) {
 		throw new Error("error" in data ? data.error : "アップロードに失敗しました。");
@@ -23,7 +59,7 @@ async function deleteAllSentences(): Promise<number> {
 	const response = await fetch("/api/upload", {
 		method: "DELETE",
 	});
-	const data = (await response.json()) as UploadResponse;
+	const data = await readUploadResponse(response);
 
 	if (!response.ok || "error" in data) {
 		throw new Error("error" in data ? data.error : "削除に失敗しました。");
