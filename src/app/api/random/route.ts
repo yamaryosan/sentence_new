@@ -10,17 +10,15 @@ export async function GET() {
 	try {
 		const totalCount = await prisma.sentence.count();
 		const take = Math.min(RANDOM_LIMIT, totalCount);
-		const maxSkip = Math.max(0, totalCount - take);
-		const skip =
-			maxSkip === 0 ? 0 : Math.floor(Math.random() * (maxSkip + 1));
 		const sentences =
 			take === 0
 				? []
-				: await prisma.sentence.findMany({
-						orderBy: { id: "asc" },
-						skip,
-						take,
-					});
+				: await prisma.$queryRaw<Array<{ id: number; content: string }>>`
+						SELECT id, content
+						FROM Sentence
+						ORDER BY RAND()
+						LIMIT ${take}
+					`;
 
 		const responseBody = RandomSentencesResponseSchema.parse({
 			sentences,
